@@ -1,6 +1,5 @@
 'use client';
 import React, { useState } from 'react';
-import { Sun, CheckCircle, ArrowRight } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // ⚙️ INITIALIZE THE SUPABASE LIVE CLIENT ENVIRONMENT
@@ -13,15 +12,15 @@ export default function SolarhuesComingSoon() {
   const [btnText, setBtnText] = useState('Notify me');
   const [isDisabled, setIsDisabled] = useState(false);
   const [msgText, setMsgText] = useState('');
-  const [msgClass, setMsgClass] = useState('hidden');
+  const [msgStyle, setMsgStyle] = useState({ display: 'none' });
 
   const handleJoinWaitlist = async (e) => {
     e.preventDefault();
     setMsgText('');
-    setMsgClass('hidden');
+    setMsgStyle({ display: 'none' });
 
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      setMsgClass('block text-red-400 text-sm mt-3 font-semibold');
+      setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
       setMsgText('Enter a valid email address.');
       return;
     }
@@ -35,14 +34,14 @@ export default function SolarhuesComingSoon() {
       if (error) throw error;
 
       setEmail('');
-      setMsgClass('block text-emerald-400 text-sm mt-3 font-semibold');
+      setMsgStyle({ display: 'block', color: '#6EE7B7', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
       setMsgText("You're on the list — we'll email you at launch.");
     } catch (error) {
       if (error.code === '23505') {
-        setMsgClass('block text-emerald-400 text-sm mt-3 font-semibold');
+        setMsgStyle({ display: 'block', color: '#6EE7B7', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
         setMsgText("You're already on the list!");
       } else {
-        setMsgClass('block text-red-400 text-sm mt-3 font-semibold');
+        setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
         setMsgText('Something went wrong — please try again.');
       }
     } finally {
@@ -52,90 +51,107 @@ export default function SolarhuesComingSoon() {
   };
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-between overflow-x-hidden text-white bg-[#1e293b] font-sans selection:bg-yellow-500 selection:text-[#1e293b]">
+    <div style={{
+      minHeight: '100vh',
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'between',
+      overflowX: 'hidden',
+      backgroundColor: '#1e293b',
+      color: '#fff',
+      fontFamily: "'Inter', sans-serif",
+      WebkitFontSmoothing: 'antialiased'
+    }}>
       
-      {/* 🔮 ON-BRAND DRIFTING RADIAL GRADIENT WASH */}
-      <div className="fixed inset-[-10%] pointer-events-none z-0 blur-[60px] opacity-40 bg-[radial-gradient(circle_at_15%_20%,rgba(5,150,105,0.35),transparent_45%),radial-gradient(circle_at_85%_15%,rgba(250,204,21,0.25),transparent_45%),radial-gradient(circle_at_50%_90%,rgba(5,150,105,0.2),transparent_50%)] animate-[pulse_8s_ease-in-out_infinite]" />
+      {/* 🔮 MASTER DRIFTING GRADIENT BACKGROUND INLINE ENGINE */}
+      <div style={{
+        position: 'fixed',
+        inset: '-10%',
+        background: 'radial-gradient(circle at 15% 20%, rgba(5,150,105,0.35), transparent 45%), radial-gradient(circle at 85% 15%, rgba(250,204,21,0.25), transparent 45%), radial-gradient(circle at 50% 90%, rgba(5,150,105,0.2), transparent 50%)',
+        filter: 'blur(60px)',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }} />
 
-      <div className="relative z-10 flex-1 flex flex-col">
+      <div style={{ position: 'relative', zIndex: 1, flex: '1', display: 'flex', flexDirection: 'column' }}>
         
-        {/* TOP BRAND BAR */}
-        <header className="flex items-center justify-between px-8 py-7">
-          <div className="flex items-center gap-2.5 font-bold text-lg tracking-tight font-display">
-            <div className="flex gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#facc15]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#059669]" />
+        {/* TOP BRAND NAVIGATION HEADER */}
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', padding: '28px 32px', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: '700', fontSize: '18px' }}>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#facc15' }} />
+              <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#fbbf24' }} />
+              <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#059669' }} />
             </div>
             SolarHues
           </div>
-          <span className="text-xs text-[#CBD5E1] border border-white/20 px-3 py-1.5 rounded-full font-medium">
+          <span style={{ fontSize: '12px', color: '#CBD5E1', border: '1px solid rgba(255,255,255,0.18)', padding: '5px 12px', borderRadius: '20px' }}>
             Launching soon
           </span>
         </header>
 
-        {/* HERO CALL TO ACTION CENTER COLUMN */}
-        <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-10 max-w-4xl mx-auto">
-          <span className="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[#94E4C2] mb-4.5">
+        {/* CORE MIDDLE DISPLAY PANEL */}
+        <main style={{ flex: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 24px' }}>
+          <div style={{ fontSize: '12.5px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#94E4C2', marginBottom: '18px', fontWeight: 'bold' }}>
             India's solar marketplace
-          </span>
+          </div>
           
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight max-w-2xl leading-[1.14] font-display">
-            Find the right <span className="bg-gradient-to-r from-[#facc15] to-[#059669] bg-clip-text text-transparent">shade of solar</span> for your roof.
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: '600', letterSpacing: '-0.01em', margin: '0', fontSize: '44px', lineHeight: '1.14', maxWidth: '640px' }}>
+            Find the right <span style={{ background: 'linear-gradient(90deg, #facc15, #059669)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>shade of solar</span><br />for your roof.
           </h1>
           
-          <p className="text-base text-[#CBD5E1] max-w-lg mt-4.5 leading-[1.65] font-medium">
+          <p style={{ fontSize: '16px', color: '#CBD5E1', maxWidth: '480px', marginTop: '18px', lineHeight: '1.65' }}>
             SolarHues is almost ready — enter your pin code, get a real system size and payback estimate, and compare quotes from verified installers near you. We'll email you the moment we're live.
           </p>
 
-          {/* THE CONVERTED WAITLIST ROW */}
-          <div className="mt-9 w-full max-w-[420px] text-left">
-            <form onSubmit={handleJoinWaitlist} className="flex flex-col sm:flex-row gap-2">
+          {/* DYNAMIC FORM REGISTRATION INTERFACE */}
+          <div style={{ marginTop: '36px', width: '100%', maxWidth: '420px' }}>
+            <form onSubmit={handleJoinWaitlist} style={{ display: 'flex', gap: '8px' }}>
               <input 
                 type="email" 
-                placeholder="you@email.com"
+                placeholder="you@email.com" 
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-grow px-4 py-3 rounded-xl border border-white/20 bg-white/5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#facc15] focus:ring-offset-1 focus:ring-offset-[#1e293b]"
+                style={{ flex: '1', padding: '13px 16px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '14px', outline: 'none' }}
               />
               <button 
-                type="submit"
+                type="submit" 
                 disabled={isDisabled}
-                className="px-5 py-3 rounded-xl bg-[#facc15] hover:bg-[#EAB308] text-[#1e293b] font-bold text-sm whitespace-nowrap transition disabled:opacity-60 cursor-pointer"
+                style={{ padding: '13px 20px', borderRadius: '9px', background: '#facc15', color: '#1e293b', fontWeight: '700', fontSize: '14px', white-space: 'nowrap', cursor: 'pointer', border: 'none', opacity: isDisabled ? 0.6 : 1 }}
               >
                 {btnText}
               </button>
             </form>
-            <div className="text-[12.5px] text-[#8FA0B5] mt-2.5 text-center sm:text-left">No spam — just one email when we launch.</div>
-            <div className={msgClass}>{msgText}</div>
+            <div style={{ fontSize: '12.5px', color: '#8FA0B5', marginTop: '10px', textAlign: 'left' }}>No spam — just one email when we launch.</div>
+            <div style={msgStyle}>{msgText}</div>
           </div>
 
-          {/* VALUE PROP BADGES */}
-          <div className="flex flex-wrap justify-center gap-7 mt-12 max-w-[560px]">
-            {[
-              "Instant sizing calculator",
-              "Compare verified vendors",
-              "Managed, milestone-based payments"
-            ].map((feature, idx) => (
-              <div key={idx} className="text-xs font-semibold text-[#94A3B8] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#facc15]" />
-                {feature}
+          {/* VALUE PROP BADGES ACCORDION LINK */}
+          <div style={{ display: 'flex', gap: '24px', marginTop: '48px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '560px' }}>
+            {["Instant sizing calculator", "Compare verified vendors", "Managed, milestone-based payments"].map((feat, i) => (
+              <div key={i} style={{ fontSize: '13px', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '7px', fontWeight: '500' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#facc15', display: 'inline-block' }} />
+                {feat}
               </div>
             ))}
           </div>
         </main>
 
-        {/* FIXED NAVIGATIONAL LINKS FOOTER */}
-        <footer className="px-8 py-6 flex flex-col sm:flex-row justify-between items-center text-[12.5px] text-[#64748B] border-t border-white/5 gap-4 w-full">
+        {/* BOTTOM LEGAL LINK STRIP FOOTER */}
+        <footer style={{ padding: '26px 32px', display: 'flex', justifyContent: 'between', alignItems: 'center', fontSize: '12.5px', color: '#64748B', borderTop: '1px solid rgba(255,255,255,0.05)', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
           <span>© 2026 SolarHues</span>
-          <div className="flex flex-wrap gap-4 text-[#94A3B8]">
-            <a href="/calculator" className="hover:text-white transition">Solar Calculator</a>
-            <a href="/products" className="hover:text-white transition">Affiliate Shop</a>
-            <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
-            <a href="/terms" className="hover:text-white transition">Terms of Service</a>
-            <a href="/refunds" className="hover:text-white transition">Refunds</a>
+          
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <a href="/calculator" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Solar Calculator</a>
+            <a href="/products" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Affiliate Shop</a>
+            <a href="/privacy" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Privacy Policy</a>
+            <a href="/terms" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Terms</a>
+            <a href="/refunds" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Refunds</a>
           </div>
-          <a href="mailto:hello@solarhues.com" className="text-[#94A3B8] hover:text-white transition">
+
+          <a href="mailto:hello@solarhues.com" style={{ color: '#94A3B8', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#94A3B8'}>
             hello@solarhues.com
           </a>
         </footer>
