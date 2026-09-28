@@ -1,9 +1,10 @@
 'use client';
 import React, { useState } from 'react';
+import { Sun, CheckCircle, ArrowRight } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
-// ⚙️ NATIVE INTEGRATION FROM YOUR INDEX.HTML PARAMETERS
-const SUPABASE_URL = 'https://qcnvqmomlzvlkquryreb.supabase.co';
+// ⚙️ INITIALIZE THE SUPABASE LIVE CLIENT ENVIRONMENT
+const SUPABASE_URL = 'https://supabase.co';
 const SUPABASE_KEY = 'sb_publishable_heg2iW28ly1fTI5BRJ_0Cg_9lURldPF';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -19,7 +20,6 @@ export default function SolarhuesComingSoon() {
     setMsgText('');
     setMsgClass('hidden');
 
-    // Email regex validation match from your index script
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       setMsgClass('block text-red-400 text-sm mt-3 font-semibold');
       setMsgText('Enter a valid email address.');
@@ -30,7 +30,6 @@ export default function SolarhuesComingSoon() {
     setBtnText('Joining...');
 
     try {
-      // Direct database row insertion match to your 'waitlist_signups' table
       const { error } = await sb.from('waitlist_signups').insert({ email });
 
       if (error) throw error;
@@ -126,25 +125,22 @@ export default function SolarhuesComingSoon() {
           </div>
         </main>
 
-        {/* BOTTOM UTILITY FOOTER */}
-        <footer className="px-8 py-6 flex flex-col sm:flex-row justify-between items-center text-[12.5px] text-[#64748B] border-t border-white/5 gap-2.5">
+        {/* FIXED NAVIGATIONAL LINKS FOOTER */}
+        <footer className="px-8 py-6 flex flex-col sm:flex-row justify-between items-center text-[12.5px] text-[#64748B] border-t border-white/5 gap-4 w-full">
           <span>© 2026 SolarHues</span>
+          <div className="flex flex-wrap gap-4 text-[#94A3B8]">
+            <a href="/calculator" className="hover:text-white transition">Solar Calculator</a>
+            <a href="/products" className="hover:text-white transition">Affiliate Shop</a>
+            <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
+            <a href="/terms" className="hover:text-white transition">Terms of Service</a>
+            <a href="/refunds" className="hover:text-white transition">Refunds</a>
+          </div>
           <a href="mailto:hello@solarhues.com" className="text-[#94A3B8] hover:text-white transition">
             hello@solarhues.com
           </a>
-             {/* DIRECT UTILITY NAVIGATION LINKS FOOTER */}
-      <footer className="max-w-7xl mx-auto w-full px-6 py-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-[11px] font-bold text-gray-400 tracking-wide gap-3">
-        <span>© {new Date().getFullYear()} Solarhues Network. All Rights Reserved.</span>
-        
-        <div className="flex flex-wrap justify-center gap-4 text-[#94A3B8]">
-          <a href="/calculator" className="hover:text-white transition">Solar Calculator</a>
-          <a href="/products" className="hover:text-white transition">Affiliate Shop</a>
-          <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
-          <a href="/terms" className="hover:text-white transition">Terms of Service</a>
-          <a href="/refunds" className="hover:text-white transition">Refund & Cancellations</a>
-        </section>
+        </footer>
 
-        <a href="mailto:hello@solarhues.com" className="text-[#94A3B8] hover:text-white transition">
-          hello@solarhues.com
-        </a>
-      </footer>
+      </div>
+    </div>
+  );
+}
