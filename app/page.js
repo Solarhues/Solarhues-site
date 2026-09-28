@@ -56,7 +56,6 @@ export default function SolarhuesComingSoon() {
       position: 'relative',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'between',
       overflowX: 'hidden',
       backgroundColor: '#1e293b',
       color: '#fff',
@@ -77,7 +76,7 @@ export default function SolarhuesComingSoon() {
       <div style={{ position: 'relative', zIndex: 1, flex: '1', display: 'flex', flexDirection: 'column' }}>
         
         {/* TOP BRAND NAVIGATION HEADER */}
-        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', padding: '28px 32px', width: '100%' }}>
+        <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '28px 32px', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontFamily: "'Space Grotesk', sans-serif", fontWeight: '700', fontSize: '18px' }}>
             <div style={{ display: 'flex', gap: '4px' }}>
               <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#facc15' }} />
@@ -119,7 +118,7 @@ export default function SolarhuesComingSoon() {
               <button 
                 type="submit" 
                 disabled={isDisabled}
-                style={{ padding: '13px 20px', borderRadius: '9px', background: '#facc15', color: '#1e293b', fontWeight: '700', fontSize: '14px', white-space: 'nowrap', cursor: 'pointer', border: 'none', opacity: isDisabled ? 0.6 : 1 }}
+                style={{ padding: '13px 20px', borderRadius: '9px', background: '#facc15', color: '#1e293b', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap', cursor: 'pointer', border: 'none', opacity: isDisabled ? 0.6 : 1 }}
               >
                 {btnText}
               </button>
@@ -140,18 +139,18 @@ export default function SolarhuesComingSoon() {
         </main>
 
         {/* BOTTOM LEGAL LINK STRIP FOOTER */}
-        <footer style={{ padding: '26px 32px', display: 'flex', justifyContent: 'between', alignItems: 'center', fontSize: '12.5px', color: '#64748B', borderTop: '1px solid rgba(255,255,255,0.05)', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
+        <footer style={{ padding: '26px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px', color: '#64748B', borderTop: '1px solid rgba(255,255,255,0.05)', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
           <span>© 2026 SolarHues</span>
           
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <a href="/calculator" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Solar Calculator</a>
-            <a href="/products" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Affiliate Shop</a>
-            <a href="/privacy" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Privacy Policy</a>
-            <a href="/terms" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Terms</a>
-            <a href="/refunds" style={{ color: '#64748B', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#64748B'}>Refunds</a>
+            <a href="/calculator" style={{ color: '#64748B', textDecoration: 'none' }}>Solar Calculator</a>
+            <a href="/products" style={{ color: '#64748B', textDecoration: 'none' }}>Affiliate Shop</a>
+            <a href="/privacy" style={{ color: '#64748B', textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="/terms" style={{ color: '#64748B', textDecoration: 'none' }}>Terms</a>
+            <a href="/refunds" style={{ color: '#64748B', textDecoration: 'none' }}>Refunds</a>
           </div>
 
-          <a href="mailto:hello@solarhues.com" style={{ color: '#94A3B8', textDecoration: 'none' }} onMouseEnter={(e) => e.target.style.color = '#fff'} onMouseLeave={(e) => e.target.style.color = '#94A3B8'}>
+          <a href="mailto:hello@solarhues.com" style={{ color: '#94A3B8', textDecoration: 'none' }}>
             hello@solarhues.com
           </a>
         </footer>
