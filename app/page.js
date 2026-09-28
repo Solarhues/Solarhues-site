@@ -142,7 +142,7 @@ export default function SolarhuesComingSoon() {
           <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
           <a href="/terms" className="hover:text-white transition">Terms of Service</a>
           <a href="/refunds" className="hover:text-white transition">Refund & Cancellations</a>
-        </div>
+        </section>
 
         <a href="mailto:hello@solarhues.com" className="text-[#94A3B8] hover:text-white transition">
           hello@solarhues.com
