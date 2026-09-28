@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
         <p>
           Installers agree to fund their digital business wallet to cover the 6% marketplace service charge. Platform access freezes automatically if wallet credits expire. The system accounts for gross logs in line with Section 194-O tax parameters.
         </p>
-      </div>
+      </section>
     </div>
   );
 }
