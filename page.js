@@ -132,9 +132,20 @@ export default function SolarhuesComingSoon() {
           <a href="mailto:hello@solarhues.com" className="text-[#94A3B8] hover:text-white transition">
             hello@solarhues.com
           </a>
-        </footer>
+             {/* DIRECT UTILITY NAVIGATION LINKS FOOTER */}
+      <footer className="max-w-7xl mx-auto w-full px-6 py-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center text-[11px] font-bold text-gray-400 tracking-wide gap-3">
+        <span>© {new Date().getFullYear()} Solarhues Network. All Rights Reserved.</span>
+        
+        <div className="flex flex-wrap justify-center gap-4 text-[#94A3B8]">
+          <a href="/calculator" className="hover:text-white transition">Solar Calculator</a>
+          <a href="/products" className="hover:text-white transition">Affiliate Shop</a>
+          <a href="/privacy" className="hover:text-white transition">Privacy Policy</a>
+          <a href="/terms" className="hover:text-white transition">Terms of Service</a>
+          <a href="/refunds" className="hover:text-white transition">Refund & Cancellations</a>
+        </div>
 
-      </div>
-    </div>
-  );
-}
+        <a href="mailto:hello@solarhues.com" className="text-[#94A3B8] hover:text-white transition">
+          hello@solarhues.com
+        </a>
+      </footer>
+
