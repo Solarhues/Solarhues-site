@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { ShoppingBag, Star, ArrowLeft, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
+import { ShoppingBag, Star, ArrowLeft, ArrowRight, HelpCircle } from 'lucide-react';
 
 const AFFILIATE_PRODUCTS = [
   {
