@@ -57,11 +57,18 @@ export default function SolarhuesComingSoon() {
           </span>
           SolarHues
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <a href="/login" className="pill-status" style={{ transition: 'background 0.2s, border-color 0.2s' }}>
+        {/* Updated Top Navigation Menu Array */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <a href="/calculator" className="pill-status" style={{ transition: 'all 0.2s' }}>
+            Calculator
+          </a>
+          <a href="/products" className="pill-status" style={{ transition: 'all 0.2s' }}>
+            Products
+          </a>
+          <a href="/login" className="pill-status" style={{ background: 'rgba(250, 204, 21, 0.1)', borderColor: 'var(--sun)' }}>
             Customer Login →
           </a>
-          <div className="pill-status" style={{ background: 'rgba(255,255,255,0.05)' }}>Launching soon</div>
+          <div className="pill-status" style={{ background: 'rgba(255,255,255,0.05)', color: '#94A3B8' }}>Launching soon</div>
         </div>
       </div>
 
