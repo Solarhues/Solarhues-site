@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Synced credentials from your master architectural profile
 const SUPABASE_URL = 'https://supabase.co';
 const SUPABASE_KEY = 'sb_publishable_heg2iW28ly1fTI5BRJ_0Cg_9lURldPF';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -19,7 +18,6 @@ export default function CustomerLogin() {
     setMsgText('');
     setMsgStyle({ display: 'none' });
 
-    // Enforce clean email syntax validation
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
       setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
       setMsgText('Enter a valid email address.');
@@ -30,11 +28,10 @@ export default function CustomerLogin() {
     setBtnText('Sending link...');
 
     try {
-      // Trigger Supabase Magic Link authentication flow
       const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin, // Returns user back to SolarHues home
+          emailRedirectTo: window.location.origin,
         },
       });
 
@@ -92,7 +89,7 @@ export default function CustomerLogin() {
         <div>© 2026 SolarHues. All rights reserved.</div>
         <div className="footer-links">
           <a href="/">Home</a>
-          <a href="/products">Products</a>
+          <a href="/privacy">Privacy</a>
         </div>
       </div>
     </>
