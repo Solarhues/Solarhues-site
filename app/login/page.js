@@ -27,8 +27,7 @@ export default function CustomerLogin() {
     setIsDisabled(true);
     setBtnText('Sending link...');
 
-    // Cloud Safety Check: Safely establish redirect origin context without breaking node server compilation
-    const redirectOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://vercel.app';
+    const redirectOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://solarhues-site.vercel.app';
 
     try {
       const { error } = await sb.auth.signInWithOtp({
@@ -61,7 +60,18 @@ export default function CustomerLogin() {
           </span>
           SolarHues
         </a>
-        <div className="pill-status">Secure Portal</div>
+        {/* Synced Top Navigation Menu Array */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <a href="/calculator" className="pill-status">
+            Calculator
+          </a>
+          <a href="/products" className="pill-status">
+            Products
+          </a>
+          <div className="pill-status" style={{ background: 'rgba(255,255,255,0.05)', color: '#94E4C2', borderColor: 'var(--emerald)' }}>
+            Secure Portal
+          </div>
+        </div>
       </div>
 
       <div className="center">
