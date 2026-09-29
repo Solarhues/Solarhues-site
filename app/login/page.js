@@ -27,11 +27,14 @@ export default function CustomerLogin() {
     setIsDisabled(true);
     setBtnText('Sending link...');
 
+    // Cloud Safety Check: Safely establish redirect origin context without breaking node server compilation
+    const redirectOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://vercel.app';
+
     try {
       const { error } = await sb.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: redirectOrigin,
         },
       });
 
