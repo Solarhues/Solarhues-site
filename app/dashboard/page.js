@@ -15,7 +15,6 @@ export default function CustomerDashboard() {
     window.location.href = '/';
   };
 
-  // 1. Guard Rule: If the session listener is still verifying tokens, show loading state
   if (loading) {
     return (
       <div className="center">
@@ -24,7 +23,6 @@ export default function CustomerDashboard() {
     );
   }
 
-  // 2. Guard Rule: Bouncer wall. If a random visitor tries to open /dashboard directly without a token, redirect or block them
   if (!user) {
     return (
       <>
@@ -50,7 +48,6 @@ export default function CustomerDashboard() {
 
   return (
     <>
-      {/* Synchronized Header Navigation Matrix */}
       <div className="top">
         <a href="/" className="brand">
           <span className="hue-dots">
@@ -71,7 +68,6 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
-      {/* Main Account Dashboard Interface */}
       <div className="center" style={{ display: 'block', maxWidth: '800px', margin: '0 auto', padding: '40px 24px', textAlign: 'left' }}>
         <div className="kicker">Verified Account Hub</div>
         <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>
@@ -81,7 +77,6 @@ export default function CustomerDashboard() {
           Account Reference ID: <span style={{ color: '#94A3B8', fontFamily: 'monospace' }}>{user.id.substring(0, 8)}...</span>
         </p>
 
-        {/* Status Metrics Container */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '20px', borderRadius: '12px' }}>
             <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Authentication Method</div>
@@ -97,9 +92,8 @@ export default function CustomerDashboard() {
           </div>
         </div>
 
-        {/* Lead/Installer Pipeline Matrix */}
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '28px' }}>
-          <h3 style={{ margin: '0 0 8px 0', fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', color: '#fff' }}>Your Installation Piles</h3>
+          <h3 style={{ margin: '0 0 8px 0', fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', color: '#fff' }}>Your Solar Pipeline</h3>
           <p style={{ fontSize: '14px', color: '#CBD5E1', margin: '0 0 24px 0' }}>Track the bids and vetting progress of localized EPC engineers assigned to your profile matching your solar requirement metrics.</p>
 
           <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '10px', padding: '20px', borderLeft: '4px solid var(--sun)' }}>
@@ -115,14 +109,13 @@ export default function CustomerDashboard() {
               <div>Est. Payback Window: <strong style={{ color: 'var(--emerald)' }}>4.2 Years</strong></div>
             </div>
 
-            <p style={{ fontSize: '12.5px', color: '#64748B', margin: '0', paddingStyle: 'italic' }}>
+            <p style={{ fontSize: '12.5px', color: '#64748B', margin: '0', fontStyle: 'italic' }}>
               *System Notice: 3 verified EPC vendors within your regional territory are currently analyzing your roof geometry. Quotes will compile automatically in this layout.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Footer System Alignment */}
       <div className="bottom" style={{ marginTop: 'auto' }}>
         <div>© 2026 SolarHues. All rights reserved.</div>
         <div className="footer-links">
@@ -133,16 +126,3 @@ export default function CustomerDashboard() {
     </>
   );
 }
-Use code with caution.
-🔗 Connecting the Login Destination Redirect
-Now, when a user successfully enters their email in your /login portal, we want Supabase to bounce them directly into this new dashboard layout instead of just back to the generic homepage.
-Open your app/login/page.js file on GitHub, find the sb.auth.signInWithOtp section around line 27, and simply update the target string to append /dashboard right onto the origin route:
-javascript
-// Update this specific block inside app/login/page.js
-const { error } = await sb.auth.signInWithOtp({
-  email,
-  options: {
-    // Appending /dashboard tells Supabase exactly where to land the customer
-    emailRedirectTo: redirectOrigin + '/dashboard', 
-  },
-});
