@@ -236,3 +236,20 @@ export default function SolarhuesDynamicCalculator() {
 
               <div className="sc-cta">
                 <div>
+                  <h4>Like this estimate?</h4>
+                  <p>Get real quotes from vetted local installers near you.</p>
+                </div>
+                <a href="/quote">Request free quotes →</a>
+              </div>
+            </div>
+          ) : (
+            <div className="sc-empty">
+              <Sun size={30} color="#CBD5E1" />
+              Enter your details on the left to see your system size, cost, and environmental impact.
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
