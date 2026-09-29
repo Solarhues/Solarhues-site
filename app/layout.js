@@ -1,18 +1,9 @@
-solarhues-marketplace/
-└── app/
-    └── layout.js              📝 (Updating to add the global Session Listener)
-Use code with caution.
-🛠️ The Updated Master Layout: app/layout.js
-Replace your existing app/layout.js with this code. Because we are using React state and live lifecycle hooks (useState, useEffect) to monitor authentication, this layout file now requires the 'use client'; directive at the absolute top.
-javascript
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Global Context to make user session data available to any sub-page automatically
 const AuthContext = createContext({ session: null, user: null, loading: true });
 
-// Synced credentials from your master architectural profile
 const SUPABASE_URL = 'https://supabase.co';
 const SUPABASE_KEY = 'sb_publishable_heg2iW28ly1fTI5BRJ_0Cg_9lURldPF';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -22,19 +13,16 @@ export default function RootLayout({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Initial Check: Fetch active session status immediately on load
     sb.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    // 2. Broadcast Listener: Catch dynamic changes (SIGN_IN, SIGN_OUT, TOKEN_REFRESHED)
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
     });
 
-    // Cleanup subscription mapping on component unmount
     return () => {
       subscription.unsubscribe();
     };
@@ -110,5 +98,4 @@ export default function RootLayout({ children }) {
   );
 }
 
-// Custom Hook to consume user data within sub-pages effortlessly
 export const useAuth = () => useContext(AuthContext);
