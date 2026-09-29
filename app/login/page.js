@@ -30,12 +30,14 @@ export default function CustomerLogin() {
     const redirectOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://solarhues-site.vercel.app';
 
     try {
-      const { error } = await sb.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: redirectOrigin,
-        },
-      });
+      // Update this specific block inside app/login/page.js
+const { error } = await sb.auth.signInWithOtp({
+  email,
+  options: {
+    // Appending /dashboard tells Supabase exactly where to land the customer
+    emailRedirectTo: redirectOrigin + '/dashboard', 
+  },
+});
 
       if (error) throw error;
 
