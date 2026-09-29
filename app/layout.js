@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const AuthContext = createContext({ session: null, user: null, loading: true });
 
-const SUPABASE_URL = 'https://supabase.co';
-const SUPABASE_KEY = 'sb_publishable_heg2iW28ly1fTI5BRJ_0Cg_9lURldPF';
+const SUPABASE_URL = 'https://xnlhgnnxunqghvdfuvke.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_xNBsUzhB6ujPKglfHpQkqQ_zNNpgBmH';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export default function RootLayout({ children }) {
