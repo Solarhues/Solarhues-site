@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// ⚙️ Supabase client — FIXED: was pointed at the wrong URL before
 const SUPABASE_URL = 'https://qcnvqmomlzvlkquryreb.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_heg2iW28ly1fTI5BRJ_0Cg_9lURldPF';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -12,7 +11,7 @@ export default function SolarhuesComingSoon() {
   const [btnText, setBtnText] = useState('Notify me');
   const [isDisabled, setIsDisabled] = useState(false);
   const [msgText, setMsgText] = useState('');
-  const [msgType, setMsgType] = useState(''); // 'ok' | 'err' | ''
+  const [msgType, setMsgType] = useState('');
 
   const handleJoinWaitlist = async (e) => {
     e.preventDefault();
@@ -52,10 +51,18 @@ export default function SolarhuesComingSoon() {
   return (
     <div className="sh-page">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+        :root{
+          --sh-font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          --sh-font-head: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+        }
+
         .sh-page{
           min-height:100vh; position:relative; display:flex; flex-direction:column;
           overflow-x:hidden; background:#1e293b; color:#fff;
-          font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+          font-family:var(--sh-font-body); -webkit-font-smoothing:antialiased;
+          text-rendering:optimizeLegibility;
         }
         .sh-glow{
           position:fixed; inset:-10%;
@@ -68,57 +75,57 @@ export default function SolarhuesComingSoon() {
         .sh-wrap{ position:relative; z-index:1; flex:1; display:flex; flex-direction:column; }
 
         .sh-header{ display:flex; align-items:center; justify-content:space-between; padding:28px 32px; }
-        .sh-brand{ display:flex; align-items:center; gap:9px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; }
+        .sh-brand{ display:flex; align-items:center; gap:9px; font-family:var(--sh-font-head); font-weight:700; font-size:18px; letter-spacing:-0.01em; }
         .sh-dots{ display:flex; gap:4px; }
         .sh-dot{ width:9px; height:9px; border-radius:50%; }
-        .sh-status{ font-size:12px; color:#CBD5E1; border:1px solid rgba(255,255,255,0.18); padding:5px 12px; border-radius:20px; }
+        .sh-status{ font-family:var(--sh-font-body); font-size:12px; color:#CBD5E1; border:1px solid rgba(255,255,255,0.18); padding:5px 12px; border-radius:20px; }
 
         .sh-main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 24px; }
-        .sh-kicker{ font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:#94E4C2; margin-bottom:18px; font-weight:700; }
-        .sh-h1{ font-family:'Space Grotesk',sans-serif; font-weight:600; letter-spacing:-0.01em; margin:0; font-size:44px; line-height:1.14; max-width:640px; }
+        .sh-kicker{ font-family:var(--sh-font-body); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:#94E4C2; margin-bottom:18px; font-weight:700; }
+        .sh-h1{ font-family:var(--sh-font-head); font-weight:700; letter-spacing:-0.02em; margin:0; font-size:44px; line-height:1.14; max-width:640px; }
         .sh-hue{ background:linear-gradient(90deg,#facc15,#059669); -webkit-background-clip:text; background-clip:text; color:transparent; }
-        .sh-sub{ font-size:16px; color:#CBD5E1; max-width:480px; margin-top:18px; line-height:1.65; }
+        .sh-sub{ font-family:var(--sh-font-body); font-size:16px; color:#CBD5E1; max-width:480px; margin-top:18px; line-height:1.65; }
 
         .sh-cta-row{ display:flex; gap:12px; margin-top:32px; flex-wrap:wrap; justify-content:center; }
         .sh-cta-primary{
-          padding:14px 26px; border-radius:9px; background:#facc15; color:#1e293b;
+          font-family:var(--sh-font-body); padding:14px 26px; border-radius:9px; background:#facc15; color:#1e293b;
           font-weight:700; font-size:14.5px; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
         }
         .sh-cta-primary:hover{ background:#eab308; }
         .sh-cta-secondary{
-          padding:14px 26px; border-radius:9px; border:1px solid rgba(255,255,255,0.25); color:#fff;
+          font-family:var(--sh-font-body); padding:14px 26px; border-radius:9px; border:1px solid rgba(255,255,255,0.25); color:#fff;
           font-weight:600; font-size:14.5px; text-decoration:none;
         }
         .sh-cta-secondary:hover{ border-color:#fff; }
 
-        .sh-divider{ display:flex; align-items:center; gap:12px; width:100%; max-width:420px; margin:40px 0 8px; color:#64748B; font-size:12px; }
+        .sh-divider{ font-family:var(--sh-font-body); display:flex; align-items:center; gap:12px; width:100%; max-width:420px; margin:40px 0 8px; color:#64748B; font-size:12px; }
         .sh-divider::before, .sh-divider::after{ content:""; flex:1; height:1px; background:rgba(255,255,255,0.12); }
 
         .sh-waitlist{ width:100%; max-width:420px; }
         .sh-waitlist-row{ display:flex; gap:8px; }
         .sh-input{
-          flex:1; padding:13px 16px; border-radius:9px; border:1px solid rgba(255,255,255,0.18);
+          font-family:var(--sh-font-body); flex:1; padding:13px 16px; border-radius:9px; border:1px solid rgba(255,255,255,0.18);
           background:rgba(255,255,255,0.06); color:#fff; font-size:14px; min-width:0;
         }
         .sh-input::placeholder{ color:#8FA0B5; }
         .sh-input:focus{ outline:2px solid #facc15; outline-offset:1px; }
         .sh-btn{
-          padding:13px 20px; border-radius:9px; background:#facc15; color:#1e293b;
+          font-family:var(--sh-font-body); padding:13px 20px; border-radius:9px; background:#facc15; color:#1e293b;
           font-weight:700; font-size:14px; white-space:nowrap; cursor:pointer; border:none;
         }
         .sh-btn:hover{ background:#eab308; }
         .sh-btn:disabled{ opacity:0.6; cursor:default; }
-        .sh-note{ font-size:12.5px; color:#8FA0B5; margin-top:10px; text-align:left; }
-        .sh-msg{ font-size:13.5px; margin-top:12px; font-weight:700; text-align:left; }
+        .sh-note{ font-family:var(--sh-font-body); font-size:12.5px; color:#8FA0B5; margin-top:10px; text-align:left; }
+        .sh-msg{ font-family:var(--sh-font-body); font-size:13.5px; margin-top:12px; font-weight:700; text-align:left; }
         .sh-msg.ok{ color:#6EE7B7; }
         .sh-msg.err{ color:#FCA5A5; }
 
         .sh-features{ display:flex; gap:28px; margin-top:48px; flex-wrap:wrap; justify-content:center; max-width:560px; }
-        .sh-feature{ font-size:13px; color:#94A3B8; display:flex; align-items:center; gap:7px; font-weight:500; }
+        .sh-feature{ font-family:var(--sh-font-body); font-size:13px; color:#94A3B8; display:flex; align-items:center; gap:7px; font-weight:500; }
         .sh-feature-dot{ width:6px; height:6px; border-radius:50%; background:#facc15; display:inline-block; flex-shrink:0; }
 
         .sh-footer{
-          padding:26px 32px; display:flex; justify-content:space-between; align-items:center;
+          font-family:var(--sh-font-body); padding:26px 32px; display:flex; justify-content:space-between; align-items:center;
           font-size:12.5px; color:#64748B; border-top:1px solid rgba(255,255,255,0.08); flex-wrap:wrap; gap:14px;
         }
         .sh-footer-links{ display:flex; gap:16px; flex-wrap:wrap; }
