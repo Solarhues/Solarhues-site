@@ -168,28 +168,3 @@ export default function AdminDashboardPortal() {
                           {milestone.title}
                         </div>
                         <div style={{ fontSize: '11px', color: milestone.status === 'active' ? 'var(--sun)' : '#64748B', marginTop: '2px', fontWeight: '500' }}>
-{milestone.status !== 'upcoming' && (
-<p style={{ fontSize: '12.5px', color: '#94A3B8', marginTop: '6px', lineHeight: '1.4' }}>
-{milestone.desc}
-
-)}
-
-
-))}
-
-
-) : (
-<div style={{ textAlign: 'center', padding: '40px 0', color: '#64748B' }}>
-<div style={{ fontSize: '32px', marginBottom: '12px' }}>📊
-<p style={{ fontSize: '14px', margin: '0', lineHeight: '1.5' }}>
-No customer selected.
-Click on a table profile entry row to inspect target hardware milestones.
-
-
-)}
-
-
-
-</>
-);
-}
