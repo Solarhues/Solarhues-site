@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Dynamically pulling these configs from your secure Vercel environment matrix
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://supabase.co';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_...';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xnlhgnnxunqghvdfuvke.supabase.co';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_xNBsUzhB6ujPKglfHpQkqQ_zNNpgBmH';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export default function CustomerLogin() {
