@@ -19,7 +19,9 @@ export default function CustomerLogin() {
     setMsgText('');
     setMsgStyle({ display: 'none' });
 
-    if (!email || !/^\S+@\S+\.\S+\$/.test(email)) {
+    // Streamlined validation matching clean standard email structures
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
       setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
       setMsgText('Enter a valid email address.');
       return;
@@ -32,7 +34,7 @@ export default function CustomerLogin() {
 
     try {
       const { error } = await sb.auth.signInWithOtp({
-        email,
+        email: cleanEmail,
         options: {
           emailRedirectTo: redirectOrigin + '/dashboard',
         },
