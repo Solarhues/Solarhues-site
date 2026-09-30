@@ -25,8 +25,60 @@ const DATA = [
 ];
 
 export default function AdminPortal() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passcode, setPasscode] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [sel, setSel] = useState(null);
 
+  const handleVerifyPasscode = (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    // Secure Master Administrative Access Token Code (Change this string to whatever you want!)
+    if (passcode === 'SolarHuesAdmin2026') {
+      setIsAuthenticated(true);
+    } else {
+      setErrorMsg('Access Denied. Invalid System Passcode Token.');
+      setPasscode('');
+    }
+  };
+
+  // 🔐 BOUNCER SCREEN: Render a secure lockout shield if the user hasn't successfully passed verification
+  if (!isAuthenticated) {
+    return (
+      <>
+        <div className="top">
+          <a href="/" className="brand">
+            <span className="hue-dots"><span></span><span></span><span></span></span>SolarHues
+          </a>
+        </div>
+        <div className="center">
+          <div className="kicker" style={{ color: '#FCA5A5' }}>Security Gateway</div>
+          <h1 style={{ fontSize: '32px', marginBottom: '12px' }}>System Operations Control</h1>
+          <p className="sub" style={{ marginBottom: '28px' }}>Restricted administrative layout route. Enter your master terminal validation code to unlock access.</p>
+          
+          <div style={{ width: '100%', maxWidth: '380px', background: 'rgba(255,255,255,0.02)', padding: '24px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px' }}>
+            <form onSubmit={handleVerifyPasscode} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                type="password" 
+                placeholder="Enter admin passcode..." 
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '15px', outline: 'none' }}
+                required
+              />
+              <button type="submit" style={{ width: '100%', padding: '14px', borderRadius: '8px', background: '#EF4444', color: '#fff', fontWeight: '700', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}>
+                Verify Key Identity →
+              </button>
+            </form>
+            {errorMsg && <div style={{ color: '#FCA5A5', fontSize: '13px', marginTop: '12px', fontWeight: 'bold', textStyle: 'center' }}>{errorMsg}</div>}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // 🎯 GRANTED ACCESS: Render the fully unlocked administrative database monitoring layout console
   return (
     <>
       <style>{`
@@ -34,7 +86,7 @@ export default function AdminPortal() {
         .ad-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; margin-top: 32px; }
         .tbl-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; overflow: hidden; }
         .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .tbl th { background: rgba(0, 0, 0, 0.2); padding: 16px; color: #94A3B8; font-family: 'Space Grotesk', sans-serif; }
+        .tbl th { background: rgba(0, 0, 0, 0.2); padding: 16px; color: #94A3B8; font-family: 'Space Grotesk', sans-serif; text-align: left; }
         .tbl td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #CBD5E1; cursor: pointer; }
         .tbl tr:hover { background: rgba(255, 255, 255, 0.05); }
         .act { background: rgba(250, 204, 21, 0.06) !important; border-left: 3px solid var(--sun); }
@@ -52,7 +104,11 @@ export default function AdminPortal() {
         <a href="/" className="brand">
           <span className="hue-dots"><span></span><span></span><span></span></span>SolarHues
         </a>
-        <div className="pill-status" style={{ borderColor: '#EF4444', color: '#FCA5A5' }}>Ops Panel</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => setIsAuthenticated(false)} className="pill-status" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: '#EF4444', color: '#FCA5A5', cursor: 'pointer' }}>
+            Lock Console
+          </button>
+        </div>
       </div>
 
       <div className="ad-box">
