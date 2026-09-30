@@ -113,11 +113,25 @@ export default function SolarhuesHome() {
 
       <div className="bottom">
         <div>© 2026 SolarHues. All rights reserved.</div>
-        <div className="footer-links">
+        <div className="footer-links" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
+          {/* Secured administrative low-profile gateway link */}
+          <span style={{ color: 'rgba(255,255,255,0.15)' }}>•</span>
+          <a 
+            href="/admin" 
+            style={{ 
+              color: '#64748B', 
+              fontSize: '11.5px', 
+              fontWeight: '500', 
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
+              transition: 'color 0.2s' 
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--sun)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
+          >
+            Admin Panel ⚙️
+          </a>
         </div>
       </div>
-    </>
-  );
-}
