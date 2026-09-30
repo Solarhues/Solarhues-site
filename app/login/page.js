@@ -19,7 +19,6 @@ export default function CustomerLogin() {
     setMsgText('');
     setMsgStyle({ display: 'none' });
 
-    // Streamlined validation matching clean standard email structures
     const cleanEmail = email.trim();
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
       setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
@@ -30,14 +29,15 @@ export default function CustomerLogin() {
     setIsDisabled(true);
     setBtnText('Sending link...');
 
-    // Locked directly to your verified custom domain context to ensure strict cross-origin tracking passes rules
-    const targetRedirect = 'https://solarhues.com';
+    // Dynamic browser routing lookup to match Vercel/Production active endpoints
+    const originUrl = typeof window !== 'undefined' ? window.location.origin : 'https://solarhues.com';
 
     try {
+      // Programmatically assigning the target redirect destination via the options parameter mapping
       const { error } = await sb.auth.signInWithOtp({
         email: cleanEmail,
         options: {
-          emailRedirectTo: targetRedirect,
+          emailRedirectTo: `${originUrl}/dashboard`,
         },
       });
 
@@ -58,77 +58,22 @@ export default function CustomerLogin() {
   return (
     <>
       <style>{`
-        .login-box {
-          width: 100%;
-          max-width: 460px;
-          margin-top: 32px;
-          text-align: left;
-          padding: 0 16px;
-        }
-        .login-row {
-          display: flex;
-          gap: 10px;
-          align-items: stretch;
-          width: 100%;
-        }
-        .login-input {
-          flex: 1;
-          padding: 16px 20px;
-          border-radius: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          background: rgba(255, 255, 255, 0.07);
-          color: #fff;
-          font-size: 16px;
-          font-family: 'Inter', sans-serif;
-          outline: none;
-          height: 54px;
-          transition: border-color 0.2s;
-        }
-        .login-input:focus {
-          border-color: var(--sun, #facc15);
-        }
-        .login-btn {
-          padding: 0 24px;
-          border-radius: 10px;
-          background: var(--sun, #facc15);
-          color: #1e293b;
-          font-weight: 700;
-          font-size: 15px;
-          font-family: 'Space Grotesk', sans-serif;
-          white-space: nowrap;
-          cursor: pointer;
-          border: none;
-          transition: background 0.2s;
-          height: 54px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .login-btn:hover {
-          background: var(--sun-dark, #eab308);
-        }
-        .login-btn:disabled {
-          opacity: 0.6;
-          cursor: default;
-        }
-        
+        .login-box { width: 100%; max-width: 460px; margin-top: 32px; text-align: left; padding: 0 16px; }
+        .login-row { display: flex; gap: 10px; align-items: stretch; width: 100%; }
+        .login-input { flex: 1; padding: 16px 20px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.07); color: #fff; font-size: 16px; font-family: 'Inter', sans-serif; outline: none; height: 54px; transition: border-color 0.2s; }
+        .login-input:focus { border-color: var(--sun, #facc15); }
+        .login-btn { padding: 0 24px; border-radius: 10px; background: var(--sun, #facc15); color: #1e293b; font-weight: 700; font-size: 15px; font-family: 'Space Grotesk', sans-serif; white-space: nowrap; cursor: pointer; border: none; transition: background 0.2s; height: 54px; display: flex; align-items: center; justify-content: center; }
+        .login-btn:hover { background: var(--sun-dark, #eab308); }
+        .login-btn:disabled { opacity: 0.6; cursor: default; }
         @media (max-width: 600px) {
-          .login-row {
-            flex-direction: column;
-            gap: 12px;
-          }
-          .login-input, .login-btn {
-            width: 100% !important;
-            height: 52px !important;
-          }
+          .login-row { flex-direction: column; gap: 12px; }
+          .login-input, .login-btn { width: 100% !important; height: 52px !important; }
         }
       `}</style>
 
       <div className="top">
         <a href="/" className="brand">
-          <span className="hue-dots">
-            <span></span><span></span><span></span>
-          </span>
+          <span className="hue-dots"><span></span><span></span><span></span></span>
           SolarHues
         </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
