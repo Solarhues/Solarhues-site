@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Dynamically pulling these configs from your secure Vercel environment matrix
+// Accessing environmental variable tokens from your Vercel/Supabase engine stack
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xnlhgnnxunqghvdfuvke.supabase.co';
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_xNBsUzhB6ujPKglfHpQkqQ_zNNpgBmH';
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -30,13 +30,14 @@ export default function CustomerLogin() {
     setIsDisabled(true);
     setBtnText('Sending link...');
 
-    const redirectOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://vercel.app';
+    // Locked directly to your verified custom domain context to ensure strict cross-origin tracking passes rules
+    const targetRedirect = 'https://solarhues.com';
 
     try {
       const { error } = await sb.auth.signInWithOtp({
         email: cleanEmail,
         options: {
-          emailRedirectTo: redirectOrigin + '/dashboard',
+          emailRedirectTo: targetRedirect,
         },
       });
 
@@ -56,7 +57,6 @@ export default function CustomerLogin() {
 
   return (
     <>
-      {/* Core Scoped Style Definitions to Override Default Browser Elements */}
       <style>{`
         .login-box {
           width: 100%;
@@ -146,7 +146,6 @@ export default function CustomerLogin() {
           Enter your email below. We will send a passwordless login link directly to your inbox to keep your account instantly secure.
         </p>
 
-        {/* Structured Form Container */}
         <div className="login-box">
           <form onSubmit={handleLogin} className="login-row">
             <input
