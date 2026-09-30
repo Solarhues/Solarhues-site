@@ -1,8 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 
-// Hardcoded administrative mockup matrix representing incoming consumer data streams.
-// In the future, this array will pull live records directly from your Supabase 'waitlist_signups' layout profiles!
 const CUSTOMERS_DATA = [
   {
     id: 'cust-101',
@@ -88,7 +86,6 @@ export default function AdminDashboardPortal() {
         }
       `}</style>
 
-      {/* Sync Header Navigation Bar */}
       <div className="top">
         <a href="/" className="brand">
           <span className="hue-dots"><span></span><span></span><span></span></span>
@@ -109,7 +106,6 @@ export default function AdminDashboardPortal() {
         </p>
 
         <div className="admin-grid">
-          {/* Main Customers Inventory Table Module */}
           <div className="table-card">
             <table className="cust-table">
               <thead>
@@ -148,7 +144,6 @@ export default function AdminDashboardPortal() {
             </table>
           </div>
 
-          {/* Interactive Dynamic Milestone Tracking Sidebar Panel */}
           <div className="side-panel">
             {selectedCustomer ? (
               <div>
@@ -162,7 +157,6 @@ export default function AdminDashboardPortal() {
                   Current Goal: {selectedCustomer.systemRequirement} matching regional pricing indexes.
                 </p>
 
-                {/* Milestone Step Layout Matrix */}
                 <div>
                   {selectedCustomer.milestones.map((milestone) => (
                     <div className="m-card" key={milestone.step}>
@@ -171,11 +165,9 @@ export default function AdminDashboardPortal() {
                       </div>
                       <div>
                         <div style={{ fontSize: '14.5px', fontWeight: '600', color: milestone.status === 'upcoming' ? '#64748B' : '#fff', fontFamily: "'Space Grotesk', sans-serif" }}>
-{milestone.title}
-
-<div style={{ fontSize: '11px', color: milestone.status === 'active' ? 'var(--sun)' : '#64748B', marginTop: '2px', fontWeight: '500' }}>
-Target Check: {milestone.date}
-
+                          {milestone.title}
+                        </div>
+                        <div style={{ fontSize: '11px', color: milestone.status === 'active' ? 'var(--sun)' : '#64748B', marginTop: '2px', fontWeight: '500' }}>
 {milestone.status !== 'upcoming' && (
 <p style={{ fontSize: '12.5px', color: '#94A3B8', marginTop: '6px', lineHeight: '1.4' }}>
 {milestone.desc}
