@@ -1,253 +1,202 @@
 'use client';
 import React, { useState } from 'react';
-import { Calculator, ArrowRight, Sun, Leaf, TreePine, IndianRupee } from 'lucide-react';
+import { ShoppingBag, Star, ArrowLeft, ArrowRight } from 'lucide-react';
 
-export default function SolarhuesDynamicCalculator() {
-  const [pincode, setPincode] = useState('');
-  const [roofType, setRoofType] = useState('Concrete Slab');
-  const [roofArea, setRoofArea] = useState('');
-  const [monthlyBill, setMonthlyBill] = useState('');
-  const [results, setResults] = useState(null);
-  const [formError, setFormError] = useState('');
+const AFFILIATE_PRODUCTS = [
+  { id: 1, name: "Hardoll Waterproof Solar Garden Disk Lights (Set of 4)", category: "Outdoor Lighting", rating: 4.5, reviews: "1,240", mrp: "₹2,499", offerPrice: "₹1,499", savings: "40% OFF", asin: "B07K4S2X6W" },
+  { id: 2, name: "Urja Lite Portable Solar Emergency LED Lantern with USB Port", category: "Emergency & Utility", rating: 4.3, reviews: "820", mrp: "₹1,800", offerPrice: "₹1,149", savings: "36% OFF", asin: "B08LYV9T55" },
+  { id: 3, name: "Anker Solar Charger 21W 2-Port USB Foldable Panel", category: "Portable Power", rating: 4.7, reviews: "2,150", mrp: "₹6,999", offerPrice: "₹4,899", savings: "30% OFF", asin: "B012YQZSMV" },
+  { id: 4, name: "Havells Solace 3-Watt Solar Path Finder Light Assembly", category: "Outdoor Lighting", rating: 4.4, reviews: "410", mrp: "₹1,500", offerPrice: "₹999", savings: "33% OFF", asin: "B09RFG8912" },
+  { id: 5, name: "Solar Universe India 10W Solar Module for DIY Charging", category: "DIY Components", rating: 4.2, reviews: "670", mrp: "₹1,200", offerPrice: "₹749", savings: "38% OFF", asin: "B078WV7V45" },
+  { id: 6, name: "Tata Power Solar Regular 100-Litre Solar Water Heater", category: "Home Appliances", rating: 4.6, reviews: "340", mrp: "₹28,000", offerPrice: "₹23,500", savings: "16% OFF", asin: "B0BFG90123" },
+  { id: 7, name: "Home 100W Solar Street Light Waterproof with Remote", category: "Outdoor Lighting", rating: 4.4, reviews: "1,520", mrp: "₹4,999", offerPrice: "₹2,799", savings: "44% OFF", asin: "B09WXY8912" },
+  { id: 8, name: "Pick Ur Needs Solar Powered Rechargeable LED Torch Lamp", category: "Emergency & Utility", rating: 4.1, reviews: "630", mrp: "₹999", offerPrice: "₹649", savings: "35% OFF", asin: "B07NX2Y731" },
+  { id: 9, name: "SARRVAD Portable Solar Generator Power Station 150Wh", category: "Portable Power", rating: 4.5, reviews: "280", mrp: "₹18,500", offerPrice: "₹14,999", savings: "19% OFF", asin: "B08HG8Y12X" },
+  { id: 10, name: "Luminous Solar NXG 1100 Hybrid UPS Smart Inverter", category: "Home Appliances", rating: 4.3, reviews: "1,890", mrp: "₹9,500", offerPrice: "₹7,299", savings: "23% OFF", asin: "B01N2Z891A" },
+  { id: 11, name: "Solar Universe India Digital Multimeter Setup Engineer Kit", category: "DIY Components", rating: 4.0, reviews: "190", mrp: "₹1,400", offerPrice: "₹949", savings: "32% OFF", asin: "B079WV7V46" },
+  { id: 12, name: "IFITech Outdoor Solar Wall Security Motion Lights (Set of 2)", category: "Outdoor Lighting", rating: 4.2, reviews: "2,410", mrp: "₹2,200", offerPrice: "₹1,299", savings: "41% OFF", asin: "B01M0X9012" },
+  { id: 13, name: "Gesto High Power Solar Flood Light 200W IP66 Waterproof", category: "Outdoor Lighting", rating: 4.3, reviews: "1,140", mrp: "₹5,500", offerPrice: "₹3,199", savings: "42% OFF", asin: "B0B5XYZ891" },
+  { id: 14, name: "Wipro Always On Rechargeable Solar Emergency LED Lantern", category: "Emergency & Utility", rating: 4.4, reviews: "3,110", mrp: "₹2,100", offerPrice: "₹1,449", savings: "31% OFF", asin: "B07QW12Y34" },
+  { id: 15, name: "EcoFlow RIVER 2 Portable Power Station 256Wh LiFePO4", category: "Portable Power", rating: 4.8, reviews: "750", mrp: "₹29,999", offerPrice: "₹24,499", savings: "18% OFF", asin: "B0BMLY8910" },
+  { id: 16, name: "Microtek Solar Inverter SS1130 12V Dual Charging Matrix", category: "Home Appliances", rating: 4.2, reviews: "860", mrp: "₹8,900", offerPrice: "₹6,850", savings: "23% OFF", asin: "B07BFG901X" },
+  { id: 17, name: "Loom Solar Panel 50 Watt - 12 Volt Mono Crystalline", category: "DIY Components", rating: 4.5, reviews: "1,430", mrp: "₹4,500", offerPrice: "₹3,250", savings: "27% OFF", asin: "B07NXG901P" },
+  { id: 18, name: "V-Guard Solar Hot Water Geyser 150 Litre System", category: "Home Appliances", rating: 4.4, reviews: "210", mrp: "₹34,000", offerPrice: "₹29,999", savings: "11% OFF", asin: "B0CFG90144" },
+  { id: 19, name: "Hardoll Solar Decorative Fairy String Lights (100 LED)", category: "Outdoor Lighting", rating: 4.3, reviews: "970", mrp: "₹1,699", offerPrice: "₹999", savings: "41% OFF", asin: "B07K4S2X7X" },
+  { id: 20, name: "Solar Universe India 12V Charge Controller Regulator", category: "DIY Components", rating: 4.1, reviews: "540", mrp: "₹950", offerPrice: "₹599", savings: "37% OFF", asin: "B078WV7V47" },
+];
 
-  const ROOF_FACTORS = {
-    'Concrete Slab': 1.0,
-    'Metal Sheet': 0.9,
-  };
+// TODO: replace with your real Amazon Associates tracking ID once approved
+const AFFILIATE_TAG = 'solarhues-21';
 
-  const calculateSolarMetrics = (e) => {
-    e.preventDefault();
-    setFormError('');
-
-    const bill = parseFloat(monthlyBill);
-    const area = parseFloat(roofArea);
-
-    if (!bill || !area) {
-      setFormError('Please fill in both your average monthly electricity bill and available roof area.');
-      return;
-    }
-
-    const roofFactor = ROOF_FACTORS[roofType] ?? 1.0;
-    const RATE_PER_UNIT = 8;
-    const UNITS_PER_KW_MONTH = 120;
-    const COST_PER_KW = 65000;
-
-    const estimatedUnits = bill / RATE_PER_UNIT;
-    const neededSize = Math.round((estimatedUnits / UNITS_PER_KW_MONTH) * 2) / 2;
-
-    // Roof capacity accounts for roof type efficiency (metal sheet needs more spacing/mounting allowance)
-    const roofCapacity = Math.round(((area / 100) * roofFactor) * 2) / 2;
-
-    let recommendedSize = Math.min(neededSize, roofCapacity);
-    if (recommendedSize < 1) recommendedSize = 1;
-
-    const spaceRequired = Math.round(recommendedSize * 100);
-    const roofConstrained = roofCapacity < neededSize;
-
-    const costEstimate = recommendedSize * COST_PER_KW;
-    const monthlySavings = recommendedSize * UNITS_PER_KW_MONTH * RATE_PER_UNIT;
-    const payback = costEstimate / (monthlySavings * 12);
-    const co2 = Math.round(recommendedSize * UNITS_PER_KW_MONTH * 12 * 0.82);
-    const trees = Math.round(co2 / 22);
-
-    setResults({
-      size: recommendedSize,
-      reqSpace: spaceRequired,
-      roofConstrained,
-      cost: costEstimate,
-      paybackPeriod: payback.toFixed(1),
-      co2Saved: (co2 / 1000).toFixed(1),
-      treesPlanted: trees,
-    });
-  };
+export default function SolarAffiliateStorefront() {
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const categories = ['All', 'Outdoor Lighting', 'Emergency & Utility', 'Portable Power', 'DIY Components', 'Home Appliances'];
+  const filteredProducts = selectedCategory === 'All' ? AFFILIATE_PRODUCTS : AFFILIATE_PRODUCTS.filter(p => p.category === selectedCategory);
 
   return (
-    <div className="sc-page">
+    <div className="ps-page">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
         :root{
-          --sc-slate:#1e293b; --sc-slate-soft:#64748B; --sc-line:#E2E8F0; --sc-paper:#F8FAFC;
-          --sc-emerald:#059669; --sc-emerald-soft:#D1FAE5; --sc-sun:#facc15; --sc-sun-dark:#EAB308;
-          --sc-font-body:'Inter',-apple-system,sans-serif; --sc-font-head:'Plus Jakarta Sans','Inter',sans-serif;
+          --ps-slate:#1e293b; --ps-slate-soft:#64748B; --ps-line:#E2E8F0; --ps-paper:#F8FAFC;
+          --ps-emerald:#059669; --ps-emerald-soft:#D1FAE5; --ps-sun:#facc15; --ps-sun-dark:#EAB308;
+          --ps-font-body:'Inter',-apple-system,sans-serif; --ps-font-head:'Plus Jakarta Sans','Inter',sans-serif;
         }
-        .sc-page{ min-height:100vh; background:var(--sc-paper); color:var(--sc-slate); font-family:var(--sc-font-body); -webkit-font-smoothing:antialiased; }
+        .ps-page{ min-height:100vh; background:var(--ps-paper); color:var(--ps-slate); font-family:var(--ps-font-body); -webkit-font-smoothing:antialiased; }
 
-        .sc-header{ background:#fff; border-bottom:1px solid var(--sc-line); padding:18px 32px; display:flex; align-items:center; justify-content:space-between; }
-        .sc-brand{ display:flex; align-items:center; gap:9px; font-family:var(--sc-font-head); font-weight:700; font-size:18px; letter-spacing:-0.01em; }
-        .sc-dots{ display:flex; gap:4px; }
-        .sc-dot{ width:9px; height:9px; border-radius:50%; }
-        .sc-nav{ display:flex; gap:24px; font-size:13.5px; font-weight:600; color:var(--sc-slate-soft); }
-        .sc-nav a{ color:inherit; text-decoration:none; }
-        .sc-nav a:hover{ color:var(--sc-slate); }
-
-        .sc-main{ max-width:1160px; margin:0 auto; padding:48px 32px 80px; display:grid; grid-template-columns:0.85fr 1.15fr; gap:32px; align-items:start; }
-        @media (max-width:900px){ .sc-main{ grid-template-columns:1fr; padding:32px 20px 60px; } }
-
-        .sc-card{ background:#fff; border:1px solid var(--sc-line); border-radius:14px; padding:26px; box-shadow:0 1px 3px rgba(30,41,59,0.05); }
-        .sc-form-title{ font-family:var(--sc-font-head); font-weight:700; font-size:19px; display:flex; align-items:center; gap:8px; margin:0; }
-        .sc-form-sub{ font-size:13px; color:var(--sc-slate-soft); margin-top:4px; }
-
-        .sc-row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:20px; }
-        .sc-field{ margin-top:18px; }
-        .sc-row2 .sc-field{ margin-top:0; }
-        .sc-label{ display:block; font-size:11.5px; font-weight:700; color:var(--sc-slate-soft); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; }
-        .sc-input{ width:100%; border:1px solid var(--sc-line); border-radius:10px; padding:12px 13px; font-size:14px; font-family:var(--sc-font-body); font-weight:600; color:var(--sc-slate); background:#fff; }
-        .sc-input:focus{ outline:2px solid var(--sc-emerald); outline-offset:1px; border-color:transparent; }
-        .sc-error{ margin-top:14px; font-size:13px; color:#DC2626; font-weight:600; background:#FEE2E2; padding:10px 12px; border-radius:8px; }
-
-        .sc-submit{
-          width:100%; margin-top:22px; background:var(--sc-slate); color:#fff; border:none; border-radius:10px;
-          padding:14px; font-family:var(--sc-font-body); font-weight:700; font-size:14.5px; cursor:pointer;
-          display:flex; align-items:center; justify-content:center; gap:8px;
-        }
-        .sc-submit:hover{ background:#0f172a; }
-
-        .sc-empty{
-          border:2px dashed var(--sc-line); border-radius:14px; padding:70px 24px; text-align:center;
-          color:var(--sc-slate-soft); font-size:14px; font-weight:600; display:flex; flex-direction:column; align-items:center; gap:10px;
+        .ps-header{ background:#fff; border-bottom:1px solid var(--ps-line); padding:18px 32px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+        .ps-header-left{ display:flex; align-items:center; gap:16px; }
+        .ps-back{ display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:700; color:var(--ps-slate-soft); text-decoration:none; }
+        .ps-back:hover{ color:var(--ps-slate); }
+        .ps-divider-v{ width:1px; height:16px; background:var(--ps-line); }
+        .ps-brand{ display:flex; align-items:center; gap:9px; font-family:var(--ps-font-head); font-weight:700; font-size:18px; letter-spacing:-0.01em; }
+        .ps-dots{ display:flex; gap:4px; }
+        .ps-dot{ width:9px; height:9px; border-radius:50%; }
+        .ps-badge{
+          font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--ps-emerald);
+          background:var(--ps-emerald-soft); border:1px solid #A7F3D0; padding:7px 12px; border-radius:10px;
+          display:flex; align-items:center; gap:6px;
         }
 
-        .sc-hero-card{ background:linear-gradient(135deg, var(--sc-emerald-soft), #fff); border:1px solid #A7F3D0; border-radius:14px; padding:26px; }
-        .sc-hero-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
-        .sc-hero-label{ font-size:11.5px; font-weight:700; color:var(--sc-emerald); text-transform:uppercase; letter-spacing:0.05em; }
-        .sc-hero-size{ font-family:var(--sc-font-head); font-size:36px; font-weight:800; margin-top:4px; }
-        .sc-hero-size span{ font-size:16px; font-weight:600; color:var(--sc-slate-soft); }
-        .sc-hero-cost-label{ font-size:11.5px; font-weight:700; color:var(--sc-slate-soft); text-transform:uppercase; letter-spacing:0.05em; text-align:right; }
-        .sc-hero-cost{ font-family:var(--sc-font-head); font-size:22px; font-weight:800; color:var(--sc-emerald); display:flex; align-items:center; gap:2px; margin-top:4px; }
+        .ps-main{ max-width:1200px; margin:0 auto; padding:40px 32px 70px; }
+        .ps-toolbar{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; border-bottom:1px solid var(--ps-line); padding-bottom:20px; margin-bottom:28px; }
+        .ps-title{ font-family:var(--ps-font-head); font-size:26px; font-weight:800; letter-spacing:-0.01em; margin:0; }
+        .ps-subtitle{ font-size:13px; color:var(--ps-slate-soft); font-weight:500; margin-top:4px; }
 
-        .sc-compliance{ margin-top:18px; padding-top:16px; border-top:1px solid rgba(5,150,105,0.15); display:flex; align-items:flex-start; gap:9px; }
-        .sc-dot-status{ width:9px; height:9px; border-radius:50%; margin-top:4px; flex-shrink:0; }
-        .sc-compliance p{ font-size:12.5px; font-weight:600; color:var(--sc-slate-soft); margin:0; line-height:1.5; }
-
-        .sc-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px; }
-        @media (max-width:520px){ .sc-stats{ grid-template-columns:1fr; } }
-        .sc-stat{ border:1px solid var(--sc-line); border-radius:12px; padding:16px; background:#fff; }
-        .sc-stat-label{ font-size:10.5px; font-weight:700; color:var(--sc-slate-soft); text-transform:uppercase; letter-spacing:0.04em; display:flex; align-items:center; gap:6px; }
-        .sc-stat-value{ font-family:var(--sc-font-head); font-size:22px; font-weight:800; margin-top:8px; }
-        .sc-stat-value span{ font-size:12px; font-weight:600; color:var(--sc-slate-soft); }
-
-        .sc-cta{
-          margin-top:16px; padding:18px 20px; background:var(--sc-slate); color:#fff; border-radius:14px;
-          display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+        .ps-filters{ display:flex; flex-wrap:wrap; gap:8px; }
+        .ps-filter-btn{
+          font-family:var(--ps-font-body); font-size:12.5px; font-weight:700; padding:9px 14px; border-radius:10px;
+          border:1px solid var(--ps-line); background:#fff; color:var(--ps-slate-soft); cursor:pointer;
         }
-        .sc-cta h4{ font-family:var(--sc-font-head); font-size:14.5px; font-weight:700; margin:0; }
-        .sc-cta p{ font-size:12px; color:#CBD5E1; margin-top:3px; }
-        .sc-cta a{
-          background:var(--sc-sun); color:var(--sc-slate); font-weight:700; font-size:13px; text-decoration:none;
-          padding:11px 18px; border-radius:9px; white-space:nowrap;
+        .ps-filter-btn:hover{ border-color:var(--ps-slate-soft); }
+        .ps-filter-btn.active{ background:var(--ps-slate); border-color:var(--ps-slate); color:#fff; }
+
+        .ps-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:20px; }
+
+        .ps-card{ background:#fff; border:1px solid var(--ps-line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:14px; transition:box-shadow 0.15s, transform 0.15s; }
+        .ps-card:hover{ box-shadow:0 6px 20px rgba(30,41,59,0.08); transform:translateY(-2px); }
+
+        .ps-thumb{
+          width:100%; height:150px; background:linear-gradient(135deg, var(--ps-emerald-soft), #F8FAFC); border:1px solid var(--ps-line);
+          border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; position:relative; text-align:center; padding:14px;
         }
-        .sc-cta a:hover{ background:var(--sc-sun-dark); }
+        .ps-thumb-cat{ position:absolute; top:10px; left:10px; font-size:9.5px; font-weight:700; color:var(--ps-emerald); background:#fff; border:1px solid #A7F3D0; padding:3px 8px; border-radius:6px; }
+        .ps-thumb-icon{ font-size:26px; }
+        .ps-thumb-label{ font-size:10.5px; font-weight:700; color:var(--ps-slate-soft); }
+        .ps-thumb-asin{ font-size:9px; color:#94A3B8; font-family:monospace; }
+
+        .ps-name{ font-size:13px; font-weight:700; line-height:1.4; min-height:36px; margin:0; }
+        .ps-rating{ display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ps-slate-soft); font-weight:600; }
+        .ps-rating-star{ display:flex; align-items:center; gap:2px; color:#EAB308; font-weight:700; }
+
+        .ps-buy-row{ border-top:1px solid #F1F5F9; padding-top:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .ps-price-line{ display:flex; align-items:baseline; gap:7px; }
+        .ps-offer{ font-family:var(--ps-font-head); font-size:17px; font-weight:800; }
+        .ps-mrp{ font-size:12px; color:#94A3B8; text-decoration:line-through; font-weight:600; }
+        .ps-savings{ display:inline-block; margin-top:4px; font-size:10px; font-weight:800; color:var(--ps-emerald); background:var(--ps-emerald-soft); padding:2px 7px; border-radius:6px; }
+
+        .ps-buy-btn{
+          background:var(--ps-sun); color:var(--ps-slate); font-weight:700; font-size:12.5px; text-decoration:none;
+          padding:10px 14px; border-radius:9px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+        }
+        .ps-buy-btn:hover{ background:var(--ps-sun-dark); }
+
+        .ps-disclosure{
+          margin-top:40px; background:#fff; border:1px solid var(--ps-line); border-radius:12px; padding:18px 20px;
+          font-size:12px; color:var(--ps-slate-soft); line-height:1.65;
+        }
+        .ps-disclosure strong{ color:var(--ps-slate); }
+
+        @media (max-width:640px){
+          .ps-header{ padding:16px 20px; }
+          .ps-main{ padding:28px 18px 56px; }
+          .ps-grid{ grid-template-columns:1fr 1fr; gap:12px; }
+        }
+        @media (max-width:420px){
+          .ps-grid{ grid-template-columns:1fr; }
+        }
       `}</style>
 
-      <header className="sc-header">
-        <div className="sc-brand">
-          <span className="sc-dots">
-            <span className="sc-dot" style={{ background: '#facc15' }} />
-            <span className="sc-dot" style={{ background: '#fbbf24' }} />
-            <span className="sc-dot" style={{ background: '#059669' }} />
-          </span>
-          SolarHues
+      <header className="ps-header">
+        <div className="ps-header-left">
+          <a href="/" className="ps-back"><ArrowLeft size={15} /> Back to home</a>
+          <div className="ps-divider-v" />
+          <div className="ps-brand">
+            <span className="ps-dots">
+              <span className="ps-dot" style={{ background: '#facc15' }} />
+              <span className="ps-dot" style={{ background: '#fbbf24' }} />
+              <span className="ps-dot" style={{ background: '#059669' }} />
+            </span>
+            SolarHues Shop
+          </div>
         </div>
-        <nav className="sc-nav">
-          <a href="/">Home</a>
-          <a href="/products">Shop</a>
-          <a href="/terms">Terms</a>
-        </nav>
+        <span className="ps-badge"><ShoppingBag size={13} /> Amazon verified links</span>
       </header>
 
-      <main className="sc-main">
-        <form onSubmit={calculateSolarMetrics} className="sc-card">
-          <h2 className="sc-form-title"><Calculator size={19} color="#059669" /> Solar sizing calculator</h2>
-          <p className="sc-form-sub">Enter a few details to size your rooftop system.</p>
-
-          <div className="sc-row2">
-            <div className="sc-field">
-              <label className="sc-label">6-digit pincode</label>
-              <input type="text" maxLength={6} required placeholder="e.g. 400001" value={pincode}
-                onChange={(e) => setPincode(e.target.value)} className="sc-input" />
-            </div>
-            <div className="sc-field">
-              <label className="sc-label">Roof type</label>
-              <select value={roofType} onChange={(e) => setRoofType(e.target.value)} className="sc-input">
-                <option value="Concrete Slab">Concrete Slab</option>
-                <option value="Metal Sheet">Metal Sheet</option>
-              </select>
-            </div>
+      <main className="ps-main">
+        <div className="ps-toolbar">
+          <div>
+            <h1 className="ps-title">Curated clean-energy gear</h1>
+            <p className="ps-subtitle">Top-reviewed solar hardware and gadgets for sustainable living.</p>
           </div>
-
-          <div className="sc-field">
-            <label className="sc-label">Roof area (sq. ft.)</label>
-            <input type="number" required placeholder="Enter open roof space..." value={roofArea}
-              onChange={(e) => setRoofArea(e.target.value)} className="sc-input" />
+          <div className="ps-filters">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`ps-filter-btn ${selectedCategory === cat ? 'active' : ''}`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div className="sc-field">
-            <label className="sc-label">Monthly electricity bill (₹)</label>
-            <input type="number" required placeholder="Enter average bill..." value={monthlyBill}
-              onChange={(e) => setMonthlyBill(e.target.value)} className="sc-input" />
-          </div>
+        <div className="ps-grid">
+          {filteredProducts.map((product) => (
+            <div key={product.id} className="ps-card">
+              <div className="ps-thumb">
+                <span className="ps-thumb-cat">{product.category}</span>
+                <span className="ps-thumb-icon">⚡</span>
+                <span className="ps-thumb-label">Amazon marketplace</span>
+                <span className="ps-thumb-asin">ASIN: {product.asin}</span>
+              </div>
 
-          {formError && <div className="sc-error">{formError}</div>}
-
-          <button type="submit" className="sc-submit">
-            Calculate feasibility <ArrowRight size={16} />
-          </button>
-        </form>
-
-        <div>
-          {results ? (
-            <div>
-              <div className="sc-hero-card">
-                <div className="sc-hero-top">
-                  <div>
-                    <div className="sc-hero-label">Recommended solar capacity</div>
-                    <div className="sc-hero-size">{results.size} <span>kW system</span></div>
-                  </div>
-                  <div>
-                    <div className="sc-hero-cost-label">Estimated investment</div>
-                    <div className="sc-hero-cost"><IndianRupee size={17} />{results.cost.toLocaleString('en-IN')}</div>
-                  </div>
-                </div>
-                <div className="sc-compliance">
-                  <span className="sc-dot-status" style={{ background: results.roofConstrained ? '#F59E0B' : '#059669' }} />
-                  <p>
-                    {results.roofConstrained
-                      ? `Sized to fit your roof — a system matching your full electricity need would need about ${results.reqSpace} sq. ft, more than you have available.`
-                      : `Fits comfortably — this system needs about ${results.reqSpace} sq. ft, within your available roof space.`}
-                  </p>
+              <div>
+                <h3 className="ps-name">{product.name}</h3>
+                <div className="ps-rating" style={{ marginTop: 6 }}>
+                  <span className="ps-rating-star"><Star size={12} fill="currentColor" /> {product.rating}</span>
+                  <span>({product.reviews} reviews)</span>
                 </div>
               </div>
 
-              <div className="sc-stats">
-                <div className="sc-stat">
-                  <div className="sc-stat-label"><Sun size={13} color="#EAB308" /> Payback window</div>
-                  <div className="sc-stat-value">{results.paybackPeriod} <span>years</span></div>
-                </div>
-                <div className="sc-stat">
-                  <div className="sc-stat-label"><Leaf size={13} color="#059669" /> Carbon offset</div>
-                  <div className="sc-stat-value">{results.co2Saved} <span>tons/yr</span></div>
-                </div>
-                <div className="sc-stat">
-                  <div className="sc-stat-label"><TreePine size={13} color="#059669" /> Trees equivalent</div>
-                  <div className="sc-stat-value">{results.treesPlanted} <span>trees/yr</span></div>
-                </div>
-              </div>
-
-              <div className="sc-cta">
+              <div className="ps-buy-row">
                 <div>
-                  <h4>Like this estimate?</h4>
-                  <p>Get real quotes from vetted local installers near you.</p>
+                  <div className="ps-price-line">
+                    <span className="ps-offer">{product.offerPrice}</span>
+                    <span className="ps-mrp">{product.mrp}</span>
+                  </div>
+                  <span className="ps-savings">{product.savings}</span>
                 </div>
-                <a href="/quote">Request free quotes →</a>
+                <a
+                  href={`https://www.amazon.in/dp/${product.asin}?tag=${AFFILIATE_TAG}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ps-buy-btn"
+                >
+                  Buy <ArrowRight size={13} />
+                </a>
               </div>
             </div>
-          ) : (
-            <div className="sc-empty">
-              <Sun size={30} color="#CBD5E1" />
-              Enter your details on the left to see your system size, cost, and environmental impact.
-            </div>
-          )}
+          ))}
+        </div>
+
+        <div className="ps-disclosure">
+          <strong>As an Amazon Associate, SolarHues earns from qualifying purchases.</strong> SolarHues
+          participates in the Amazon Services LLC Associates Program, an affiliate advertising
+          program designed to provide a means for sites to earn advertising fees by advertising
+          and linking to Amazon.in.
         </div>
       </main>
     </div>
