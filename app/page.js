@@ -13,13 +13,11 @@ export default function SolarhuesHome() {
     setMsgText('');
     setMsgStyle({ display: 'none' });
 
-    // Enforce pure 6-digit Indian Pin Code mapping standard
     if (!pincode || pincode.length !== 6) {
-      setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold', fontFamily: "'Inter', sans-serif" });
+      setMsgStyle({ display: 'block', color: '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
       setMsgText('Enter a valid 6-digit area pin code.');
       return;
     }
-
     router.push(`/calculator?pin=${pincode}`);
   };
 
@@ -27,22 +25,15 @@ export default function SolarhuesHome() {
     <>
       <div className="top">
         <div className="brand">
-          <span className="hue-dots">
-            <span></span><span></span><span></span>
-          </span>
+          <span className="hue-dots"><span></span><span></span><span></span></span>
           SolarHues
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <a href="/calculator" className="pill-status" style={{ transition: 'all 0.2s' }}>
-            Calculator
-          </a>
-          <a href="/products" className="pill-status" style={{ transition: 'all 0.2s' }}>
-            Products
-          </a>
+          <a href="/calculator" className="pill-status">Calculator</a>
+          <a href="/products" className="pill-status">Products</a>
           <a href="/login" className="pill-status" style={{ background: 'rgba(250, 204, 21, 0.1)', borderColor: 'var(--sun)' }}>
             Customer Login →
           </a>
-          <div className="pill-status" style={{ background: 'rgba(255,255,255,0.05)', color: '#94A3B8' }}>Launching soon</div>
         </div>
       </div>
 
@@ -51,9 +42,8 @@ export default function SolarhuesHome() {
         <h1>Find the right <span className="hue">shade of solar</span><br />for your roof.</h1>
         <p className="sub">Instantly compute your roof's generation capabilities, installation sizing constraints, and financial payback timelines based on regional solar irradiance mapping data.</p>
 
-        {/* Enhanced, Symmetrically Scaled Pin Code Router Module */}
         <div className="waitlist" style={{ maxWidth: '520px', marginTop: '40px' }}>
-          <label style={{ display: 'block', fontSize: '15px', color: '#CBD5E1', marginBottom: '10px', fontWeight: '500', fontFamily: "'Inter', sans-serif" }}>
+          <label style={{ display: 'block', fontSize: '15px', color: '#CBD5E1', marginBottom: '10px', fontWeight: '500' }}>
             Enter your area pin code:
           </label>
           <form onSubmit={handleGoToCalculator} className="waitlist-row" style={{ display: 'flex', gap: '10px', alignItems: 'stretch', width: '100%' }}>
@@ -64,37 +54,15 @@ export default function SolarhuesHome() {
               value={pincode}
               onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
               style={{ 
-                flex: '1', 
-                padding: '16px 20px', 
-                borderRadius: '10px', 
-                border: '1px solid rgba(255,255,255,0.22)', 
-                background: 'rgba(255,255,255,0.07)', 
-                color: '#fff', 
-                fontSize: '18px', 
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontWeight: '500',
-                outline: 'none',
-                height: '56px'
+                flex: '1', padding: '16px 20px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.22)', 
+                background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '18px', outline: 'none', height: '56px'
               }}
             />
             <button 
               type="submit" 
               style={{ 
-                padding: '0 28px', 
-                borderRadius: '10px', 
-                background: 'var(--sun)', 
-                color: '#1e293b', 
-                fontWeight: '700', 
-                fontSize: '16px', 
-                fontFamily: "'Space Grotesk', sans-serif",
-                whiteSpace: 'nowrap', 
-                cursor: 'pointer', 
-                border: 'none', 
-                transition: 'background 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '56px'
+                padding: '0 28px', borderRadius: '10px', background: 'var(--sun)', color: '#1e293b', 
+                fontWeight: '700', fontSize: '16px', whiteSpace: 'nowrap', cursor: 'pointer', border: 'none', height: '56px'
               }}
             >
               Calculator →
@@ -115,19 +83,10 @@ export default function SolarhuesHome() {
         <div>© 2026 SolarHues. All rights reserved.</div>
         <div className="footer-links" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-          {/* Secured administrative low-profile gateway link */}
           <span style={{ color: 'rgba(255,255,255,0.15)' }}>•</span>
           <a 
             href="/admin" 
-            style={{ 
-              color: '#64748B', 
-              fontSize: '11.5px', 
-              fontWeight: '500', 
-              letterSpacing: '0.03em',
-              textTransform: 'uppercase',
-              transition: 'color 0.2s' 
-            }}
+            style={{ color: '#64748B', fontSize: '11.5px', fontWeight: '500', textTransform: 'uppercase', transition: 'color 0.2s' }}
             onMouseEnter={(e) => e.currentTarget.style.color = 'var(--sun)'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#64748B'}
           >
@@ -135,3 +94,6 @@ export default function SolarhuesHome() {
           </a>
         </div>
       </div>
+    </>
+  );
+}
