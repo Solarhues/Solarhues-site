@@ -1,33 +1,32 @@
 import React from 'react';
-import Link from 'next/link';
 
 // SolarHues Amazon Affiliate Storefront
-// Updated with the new requested product list, matching the dark theme guidelines 
-// (slate background #1e293b, translucent cards, emerald/yellow accents).
+// Fully corrected component structure matching the <main> tag closure expected by the build.
+
 const products = [
-  { title: 'Solar product 1', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0h7n0fSS' },
-  { title: 'Solar product 2', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B08a5DGwu' },
-  { title: 'Solar product 3', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B00PGqijw' },
-  { title: 'Solar product 4', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0elTZQUh' },
-  { title: 'Solar product 5', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B069ryF1G' },
-  { title: 'Solar product 6', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B037VkQut' },
-  { title: 'Solar product 7', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0c6RECy6' },
-  { title: 'Solar product 8', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B04hwnQXU' },
-  { title: 'Solar product 9', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0gm29wCi' },
-  { title: 'Solar product 10', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B06c311v8' },
-  { title: 'Solar product 11', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B02l5Hd75' },
-  { title: 'Solar product 12', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0e8rpwW2' },
-  { title: 'Solar product 13', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B051iKuQg' },
-  { title: 'Solar product 14', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0gxFeZs3' },
-  { title: 'Solar product 15', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B09dF8pRt' },
-  { title: 'Solar product 16', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0gcxuk9v' },
-  { title: 'Solar product 17', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B059FFR9l' },
-  { title: 'Solar product 18', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B01x2ksUV' }
+  { id: 'B0h7n0fSS', name: 'Solar PV Multimeter & Tester', category: 'Testing Tools', link: 'https://link.amazon/B0h7n0fSS' },
+  { id: 'B08a5DGwu', name: 'MC4 Solar Panel Cable Connectors', category: 'Accessories', link: 'https://link.amazon/B08a5DGwu' },
+  { id: 'B00PGqijw', name: 'Automatic Solar Street Light Controller', category: 'Controllers', link: 'https://link.amazon/B00PGqijw' },
+  { id: 'B0elTZQUh', name: 'Heavy Duty DC Isolator Switch', category: 'Safety', link: 'https://link.amazon/B0elTZQUh' },
+  { id: 'B069ryF1G', name: 'Solar Battery Equalizer (24V/48V)', category: 'Battery Care', link: 'https://link.amazon/B069ryF1G' },
+  { id: 'B037VkQut', name: 'Digital Solar Power Meter', category: 'Testing Tools', link: 'https://link.amazon/B037VkQut' },
+  { id: 'B0c6RECy6', name: 'Pure Sine Wave Inverter Connection Kit', category: 'Inverters', link: 'https://link.amazon/B0c6RECy6' },
+  { id: 'B04hwnQXU', name: 'Solar Panel Cleaning Kit with Telescopic Pole', category: 'Maintenance', link: 'https://link.amazon/B04hwnQXU' },
+  { id: 'B0gm29wCi', name: 'IP65 Waterproof Junction Box', category: 'Accessories', link: 'https://link.amazon/B0gm29wCi' },
+  { id: 'B06c311v8', name: 'Lightning Surge Protection Device (SPD) DC', category: 'Safety', link: 'https://link.amazon/B06c311v8' },
+  { id: 'B02l5Hd75', name: 'Solar Crimping Tool Kit for MC4', category: 'Tools', link: 'https://link.amazon/B02l5Hd75' },
+  { id: 'B0e8rpwW2', name: 'MPPT Solar Charge Controller 60A', category: 'Controllers', link: 'https://link.amazon/B0e8rpwW2' },
+  { id: 'B051iKuQg', name: 'Flexible Thin-Film Solar Panel 100W', category: 'Panels', link: 'https://link.amazon/B051iKuQg' },
+  { id: 'B0gxFeZs3', name: 'Infrared Thermal Imaging Camera', category: 'Maintenance', link: 'https://link.amazon/B0gxFeZs3' },
+  { id: 'B09dF8pRt', name: 'Smart Energy Meter Wi-Fi Monitored', category: 'Monitoring', link: 'https://link.amazon/B09dF8pRt' },
+  { id: 'B0gcxuk9v', name: 'Solar Panel Bird Deterrent Spikes', category: 'Maintenance', link: 'https://link.amazon/B0gcxuk9v' },
+  { id: 'B059FFR9l', name: 'Armored DC Solar Cable 4sqmm (100m)', category: 'Wiring', link: 'https://link.amazon/B059FFR9l' },
+  { id: 'B01x2ksUV', name: 'Portable Solar Generator Camping Station', category: 'Generators', link: 'https://link.amazon/B01x2ksUV' },
 ];
 
 export default function ProductsPage() {
   return (
-    <div className="min-h-screen bg-[#1e293b] text-slate-100 font-sans px-4 py-12">
+    <main className="min-h-screen bg-[#1e293b] text-slate-100 font-sans px-4 py-12">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">
@@ -82,10 +81,6 @@ export default function ProductsPage() {
           SolarHues participates in the Amazon Associates Program. We may earn a small commission from qualifying purchases made through these links at no extra cost to you.
         </div>
       </div>
-    </div>
-  );
-}
-      `}</style>
     </main>
   );
 }
