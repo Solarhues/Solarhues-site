@@ -31,7 +31,7 @@ export default function ProductsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 font-heading">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
             Recommended Solar Equipment & Accessories
           </h1>
           <p className="text-slate-400 max-w-2xl mx-auto text-sm md:text-base">
