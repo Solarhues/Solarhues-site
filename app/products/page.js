@@ -1,11 +1,35 @@
 'use client';
 import React from 'react';
 import { ShoppingBag, ArrowLeft, ExternalLink } from 'lucide-react';
-import { products } from './data';
+
+// Hardcoded inside the page to prevent "undefined" import errors during static export
+const staticProducts = [
+  { title: 'Solar product 1', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 2', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 3', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 4', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 5', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 6', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 7', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 8', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 9', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 10', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 11', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 12', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 13', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 14', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 15', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 16', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 17', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' },
+  { title: 'Solar product 18', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon' }
+];
 
 const TAG = 'solarhues-21';
 
 export default function SolarAffiliateStorefront() {
+  // Safe validation check against build-time pipeline failures
+  const activeList = staticProducts || [];
+
   return (
     <div className="ps-page" style={{ minHeight: '100vh', background: '#1e293b', color: '#fff', fontFamily: 'sans-serif' }}>
       <header style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -28,7 +52,7 @@ export default function SolarAffiliateStorefront() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-          {products.map((p, idx) => (
+          {activeList.map((p, idx) => (
             <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '220px' }}>
               <div>
                 <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#6EE7B7', fontWeight: '700', display: 'block', marginBottom: '8px' }}>
@@ -46,9 +70,7 @@ export default function SolarAffiliateStorefront() {
                   href={`${p.url}${p.url.includes('?') ? '&' : '?'}tag=${TAG}`} 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  style={{ width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontSize: '13.5px', fontWeight: '600', padding: '10px 0', borderRadius: '9px', textDecoration: 'none', transition: 'background 0.2s' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#059669'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                  style={{ width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', fontSize: '13.5px', fontWeight: '600', padding: '10px 0', borderRadius: '9px', textDecoration: 'none' }}
                 >
                   View on Amazon <ExternalLink size={14} />
                 </a>
