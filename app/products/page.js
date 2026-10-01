@@ -1,19 +1,97 @@
-export const ITEMS = [
-  { id: 1, name: "Gesto 25 Feet G40 LED String Lights with 25 Warm White Bulbs", cat: "Outdoor Lighting", r: 4.1, rev: "278", mrp: "₹1,999", off: "₹1,198", sv: "40% OFF", url: "https://link.amazon" },
-  { id: 2, name: "One94Store 20Meter 56 LED Serial String Lights - Waterproof Wire", cat: "Outdoor Lighting", r: 3.9, rev: "1,731", mrp: "₹999", off: "₹199", sv: "80% OFF", url: "https://link.amazon" },
-  { id: 3, name: "Anker Solar Charger 21W 2-Port USB Foldable Panel", cat: "Portable Power", r: 4.7, rev: "2,150", mrp: "₹6,999", off: "₹4,899", sv: "30% OFF", url: "https://link.amazon" },
-  { id: 4, name: "Havells Solace 3-Watt Solar Path Finder Light Assembly", cat: "Outdoor Lighting", r: 4.4, rev: "410", mrp: "₹1,500", off: "₹999", sv: "33% OFF", url: "https://link.amazon" },
-  { id: 5, name: "Solar Universe India 10W Solar Module for DIY Charging", cat: "DIY Components", r: 4.2, rev: "670", mrp: "₹1,200", off: "₹749", sv: "38% OFF", url: "https://link.amazon" },
-  { id: 6, name: "Tata Power Solar Regular 100-Litre Solar Water Heater", cat: "Home Appliances", r: 4.6, rev: "340", mrp: "₹28,000", off: "₹23,500", sv: "16% OFF", url: "https://link.amazon" },
-  { id: 7, name: "Home 100W Solar Street Light Waterproof with Remote", cat: "Outdoor Lighting", r: 4.4, rev: "1,520", mrp: "₹4,999", off: "₹2,799", sv: "44% OFF", url: "https://link.amazon" },
-  { id: 8, name: "Pick Ur Needs Solar Powered Rechargeable LED Torch Lamp", cat: "Emergency & Utility", r: 4.1, rev: "630", mrp: "₹999", off: "₹649", sv: "35% OFF", url: "https://link.amazon" },
-  { id: 9, name: "SARRVAD Portable Solar Generator Power Station 150Wh", cat: "Portable Power", r: 4.5, rev: "280", mrp: "₹18,500", off: "₹14,999", sv: "19% OFF", url: "https://link.amazon" },
-  { id: 10, name: "Luminous Solar NXG 1100 Hybrid UPS Smart Inverter", cat: "Home Appliances", r: 4.3, rev: "1,890", mrp: "₹9,500", off: "₹7,299", sv: "23% OFF", url: "https://link.amazon" },
-  { id: 11, name: "Solar Universe India Digital Multimeter Setup Kit", cat: "DIY Components", r: 4.0, rev: "190", mrp: "₹1,400", off: "₹949", sv: "32% OFF", url: "https://link.amazon" },
-  { id: 12, name: "IFITech Outdoor Solar Wall Security Motion Lights (Set of 2)", cat: "Outdoor Lighting", r: 4.2, rev: "2,410", mrp: "₹2,200", off: "₹1,299", sv: "41% OFF", url: "https://link.amazon" },
-  { id: 13, name: "Gesto High Power Solar Flood Light 200W IP66", cat: "Outdoor Lighting", r: 4.3, rev: "1,140", mrp: "₹5,500", off: "₹3,199", sv: "42% OFF", url: "https://link.amazon" },
-  { id: 14, name: "Wipro Always On Rechargeable Solar Emergency LED Lantern", cat: "Emergency & Utility", r: 4.4, rev: "3,110", mrp: "₹2,100", off: "₹1,449", sv: "31% OFF", url: "https://link.amazon" },
-  { id: 15, name: "EcoFlow RIVER 2 Portable Power Station 256Wh LiFePO4", cat: "Portable Power", r: 4.8, rev: "750", mrp: "₹29,999", off: "₹24,499", sv: "18% OFF", url: "https://link.amazon" },
-  { id: 16, name: "Microtek Solar Inverter SS1130 12V Dual Charging Matrix", cat: "Home Appliances", r: 4.2, rev: "860", mrp: "₹8,900", off: "₹6,850", sv: "23% OFF", url: "https://link.amazon" },
-  { id: 17, name: "Loom Solar Panel 50 Watt - 12 Volt Mono Crystalline", cat: "DIY Components", r: 4.5, rev: "1,430", mrp: "₹4,500", off: "₹3,250", sv: "27% OFF", url: "https://link.amazon" },
-  { id: 18, name: "V-Guard Solar Hot Water Geyser 150 Litre System", cat: "Home Appliances", r: 4.4, rev: "210", mrp: "₹34,000", off: "₹29,999", sv: "11% OFF", url: "https://link.amazon" }
+import { Space_Grotesk, Inter } from 'next/font/google';
+import Link from 'next/link';
+
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+
+const products = [
+  { title: 'Solar product 1', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0h7n0fSS' },
+  { title: 'Solar product 2', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B08a5DGwu' },
+  { title: 'Solar product 3', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B00PGqijw' },
+  { title: 'Solar product 4', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0elTZQUh' },
+  { title: 'Solar product 5', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B069ryF1G' },
+  { title: 'Solar product 6', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B037VkQut' },
+  { title: 'Solar product 7', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0c6RECy6' },
+  { title: 'Solar product 8', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B04hwnQXU' },
+  { title: 'Solar product 9', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0gm29wCi' },
+  { title: 'Solar product 10', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B06c311v8' },
+  { title: 'Solar product 11', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B02l5Hd75' },
+  { title: 'Solar product 12', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0e8rpwW2' },
+  { title: 'Solar product 13', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B051iKuQg' },
+  { title: 'Solar product 14', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0gxFeZs3' },
+  { title: 'Solar product 15', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B09dF8pRt' },
+  { title: 'Solar product 16', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B0gcxuk9v' },
+  { title: 'Solar product 17', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B059FFR9l' },
+  { title: 'Solar product 18', description: 'Explore this solar and home-energy product on Amazon.', url: 'https://link.amazon/B01x2ksUV' }
+];
+
+export default function ProductsPage() {
+  return (
+    <main className={`${spaceGrotesk.variable} ${inter.variable} products-page`}>
+      <div className="products-shell">
+        <header className="products-header">
+          <div>
+            <p className="eyebrow">SolarHues marketplace</p>
+            <h1>Solar products for your home</h1>
+            <p className="intro">
+              Helpful solar and backup-power essentials, selected for homeowners exploring cleaner,
+              more reliable energy.
+            </p>
+          </div>
+          <Link className="back-link" href="/">Back to SolarHues</Link>
+        </header>
+
+        <section className="notice" aria-label="Affiliate disclosure">
+          <strong>Affiliate disclosure:</strong> Product links open Amazon. SolarHues may earn a
+          commission from qualifying purchases at no additional cost to you.
+        </section>
+
+        <section className="product-grid" aria-label="Solar products">
+          {products.map((product, index) => (
+            <article className="product-card" key={product.url}>
+              <div className="product-number">{String(index + 1).padStart(2, '0')}</div>
+              <div>
+                <h2>{product.title}</h2>
+                <p>{product.description}</p>
+                <a
+                  className="product-link"
+                  href={product.url}
+                  target="_blank"
+                  rel="sponsored noopener noreferrer"
+                >
+                  View on Amazon <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+            </article>
+          ))}
+        </section>
+      </div>
+
+      <style jsx global>{`;
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #1e293b; color: #f8fafc; }
+        .products-page { min-height: 100vh; font-family: var(--font-inter), sans-serif; background: #1e293b; }
+        .products-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 64px 0 80px; }
+        .products-header { display: flex; justify-content: space-between; gap: 32px; align-items: flex-end; margin-bottom: 32px; }
+        .eyebrow { margin: 0 0 12px; color: #facc15; font-size: 0.78rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+        h1, h2 { font-family: var(--font-space-grotesk), sans-serif; }
+        h1 { max-width: 700px; margin: 0; font-size: clamp(2.4rem, 6vw, 4.7rem); line-height: .98; letter-spacing: -.055em; }
+        .intro { max-width: 620px; margin: 20px 0 0; color: #cbd5e1; font-size: 1.05rem; line-height: 1.7; }
+        .back-link { color: #facc15; font-size: .92rem; text-decoration: none; white-space: nowrap; }
+        .back-link:hover, .product-link:hover { color: #fde68a; }
+        .notice { margin-bottom: 34px; padding: 16px 18px; border: 1px solid rgba(250,204,21,.3); border-radius: 12px; background: rgba(250,204,21,.08); color: #fde68a; line-height: 1.6; }
+        .notice strong { color: #facc15; }
+        .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .product-card { display: flex; gap: 16px; min-height: 190px; padding: 24px; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; background: rgba(255,255,255,.03); transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+        .product-card:hover { transform: translateY(-3px); border-color: rgba(5,150,105,.65); background: rgba(5,150,105,.08); }
+        .product-number { flex: 0 0 auto; color: #059669; font-family: var(--font-space-grotesk), sans-serif; font-size: .85rem; font-weight: 700; }
+        .product-card h2 { margin: 0 0 10px; font-size: 1.2rem; line-height: 1.15; }
+        .product-card p { margin: 0 0 22px; color: #94a3b8; font-size: .92rem; line-height: 1.55; }
+        .product-link { color: #facc15; font-size: .9rem; font-weight: 700; text-decoration: none; }
+        @media (max-width: 900px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 640px) { .products-shell { padding-top: 40px; } .products-header { display: block; } .back-link { display: inline-block; margin-top: 22px; } .product-grid { grid-template-columns: 1fr; } }
+      `}</style>
+    </main>
+  );
+}
