@@ -1,0 +1,20 @@
+export const ITEMS = [
+  { id: 1, name: "Solar PV Multimeter & Tester", cat: "DIY Components", r: 4.5, rev: "1,240", mrp: "₹2,499", off: "₹1,499", sv: "40% OFF", url: "https://link.amazon" },
+  { id: 2, name: "MC4 Solar Panel Cable Connectors", cat: "DIY Components", r: 4.3, rev: "820", mrp: "₹1,800", off: "₹1,149", sv: "36% OFF", url: "https://link.amazon" },
+  { id: 3, name: "Automatic Solar Street Light Controller", cat: "DIY Components", r: 4.7, rev: "2,150", mrp: "₹6,999", off: "₹4,899", sv: "30% OFF", url: "https://link.amazon" },
+  { id: 4, name: "Heavy Duty DC Isolator Switch", cat: "DIY Components", r: 4.4, rev: "410", mrp: "₹1,500", off: "₹999", sv: "33% OFF", url: "https://link.amazon" },
+  { id: 5, name: "Solar Battery Equalizer (24V/48V)", cat: "DIY Components", r: 4.2, rev: "670", mrp: "₹1,200", off: "₹749", sv: "38% OFF", url: "https://link.amazon" },
+  { id: 6, name: "Digital Solar Power Meter", cat: "DIY Components", r: 4.6, rev: "340", mrp: "₹28,000", off: "₹23,500", sv: "16% OFF", url: "https://link.amazon" },
+  { id: 7, name: "Pure Sine Wave Inverter Connection Kit", cat: "DIY Components", r: 4.4, rev: "1,520", mrp: "₹4,999", off: "₹2,799", sv: "44% OFF", url: "https://link.amazon" },
+  { id: 8, name: "Solar Panel Cleaning Kit with Telescopic Pole", cat: "DIY Components", r: 4.1, rev: "630", mrp: "₹999", off: "₹649", sv: "35% OFF", url: "https://link.amazon" },
+  { id: 9, name: "IP65 Waterproof Junction Box", cat: "DIY Components", r: 4.5, rev: "280", mrp: "₹18,500", off: "₹14,999", sv: "19% OFF", url: "https://link.amazon" },
+  { id: 10, name: "Lightning Surge Protection Device (SPD) DC", cat: "DIY Components", r: 4.3, rev: "1,890", mrp: "₹9,500", off: "₹7,299", sv: "23% OFF", url: "https://link.amazon" },
+  { id: 11, name: "Solar Universe India Digital Multimeter Setup Kit", cat: "DIY Components", r: 4.0, rev: "190", mrp: "₹1,400", off: "₹949", sv: "32% OFF", url: "https://link.amazon" },
+  { id: 12, name: "IFITech Outdoor Solar Wall Security Motion Lights (Set of 2)", cat: "Outdoor Lighting", r: 4.2, rev: "2,410", mrp: "₹2,200", off: "₹1,299", sv: "41% OFF", url: "https://link.amazon" },
+  { id: 13, name: "Gesto High Power Solar Flood Light 200W IP66 Waterproof", cat: "Outdoor Lighting", r: 4.3, rev: "1,140", mrp: "₹5,500", off: "₹3,199", sv: "42% OFF", url: "https://link.amazon" },
+  { id: 14, name: "Wipro Always On Rechargeable Solar Emergency LED Lantern", cat: "Emergency & Utility", r: 4.4, rev: "3,110", mrp: "₹2,100", off: "₹1,449", sv: "31% OFF", url: "https://link.amazon" },
+  { id: 15, name: "EcoFlow RIVER 2 Portable Power Station 256Wh LiFePO4", cat: "Portable Power", r: 4.8, rev: "750", mrp: "₹29,999", off: "₹24,499", sv: "18% OFF", url: "https://link.amazon" },
+  { id: 16, name: "Solar Light Outdoor Hmcity Deck Stair Step Lights Waterproof (Pack of 4)", cat: "Outdoor Lighting", r: 4.4, rev: "42,440", mrp: "₹599", off: "₹349", sv: "42% OFF", url: "https://link.amazon" },
+  { id: 17, name: "BITPOTT Solar Pathway Lights Outdoor Waterproof Retro Landscape (Pack 6)", cat: "Outdoor Lighting", r: 4.4, rev: "2,282", mrp: "₹19,999", off: "₹4,234", sv: "79% OFF", url: "https://link.amazon" },
+  { id: 18, name: "Solpex Solar Pathway Lights Waterproof Tungsten Filament LED (Pack of 12)", cat: "Outdoor Lighting", r: 4.4, rev: "428", mrp: "₹24,999", off: "₹5,499", sv: "78% OFF", url: "https://link.amazon" }
+];
