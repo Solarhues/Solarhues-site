@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { ShoppingBag, Star, ArrowLeft } from 'lucide-react';
 
 const AFFILIATE_PRODUCTS = [
-  { id: 1, name: "Hardoll Waterproof Solar Garden Disk Lights (Set of 4)", category: "Outdoor Lighting", rating: 4.5, reviews: "1,240", mrp: "₹2,499", offerPrice: "₹1,499", savings: "40% OFF", url: "https://link.amazon" },
-  { id: 2, name: "Urja Lite Portable Solar Emergency LED Lantern with USB Port", category: "Emergency & Utility", rating: 4.3, reviews: "820", mrp: "₹1,800", offerPrice: "₹1,149", savings: "36% OFF", url: "https://link.amazon" },
+  { id: 1, name: "Gesto 25 Feet G40 LED String Lights with 25 Warm White Bulbs", category: "Outdoor Lighting", rating: 4.1, reviews: "278", mrp: "₹1,999", offerPrice: "₹1,198", savings: "40% OFF", url: "https://link.amazon" },
+  { id: 2, name: "One94Store 20Meter 56 LED Serial String Lights - Waterproof Wire", category: "Outdoor Lighting", rating: 3.9, reviews: "1,731", mrp: "₹999", offerPrice: "₹199", savings: "80% OFF", url: "https://link.amazon" },
   { id: 3, name: "Anker Solar Charger 21W 2-Port USB Foldable Panel", category: "Portable Power", rating: 4.7, reviews: "2,150", mrp: "₹6,999", offerPrice: "₹4,899", savings: "30% OFF", url: "https://link.amazon" },
   { id: 4, name: "Havells Solace 3-Watt Solar Path Finder Light Assembly", category: "Outdoor Lighting", rating: 4.4, reviews: "410", mrp: "₹1,500", offerPrice: "₹999", savings: "33% OFF", url: "https://link.amazon" },
   { id: 5, name: "Solar Universe India 10W Solar Module for DIY Charging", category: "DIY Components", rating: 4.2, reviews: "670", mrp: "₹1,200", offerPrice: "₹749", savings: "38% OFF", url: "https://link.amazon" },
@@ -28,7 +28,7 @@ const AFFILIATE_TAG = 'solarhues-21';
 export default function SolarAffiliateStorefront() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const categories = ['All', 'Outdoor Lighting', 'Emergency & Utility', 'Portable Power', 'DIY Components', 'Home Appliances'];
-  const filtered = selectedCategory==='All' ? AFFILIATE_PRODUCTS : AFFILIATE_PRODUCTS.filter(p=>p.category===selectedCategory);
+  const filtered = selectedCategory === 'All' ? AFFILIATE_PRODUCTS : AFFILIATE_PRODUCTS.filter(p => p.category === selectedCategory);
 
   return (
     <div className="ps-page">
@@ -109,19 +109,19 @@ export default function SolarAffiliateStorefront() {
         .ps-filter-btn:hover{border-color:#94A3B8;color:#fff;}
         .ps-filter-btn.active{background:#facc15;border-color:#facc15;color:#1e293b;}
         .ps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
-        .ps-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;min-height:310px;}
-.ps-card-cat{font-size:11px;text-transform:uppercase;color:#94E4C2;font-weight:700;margin-bottom:8px;display:block;}
-.ps-card-title{font-size:14.5px;font-weight:600;line-height:1.4;color:#fff;margin:0 0 12px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:40px;}
-.ps-rating-row{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:16px;}
-.ps-stars{display:flex;align-items:center;gap:4px;color:#facc15;font-weight:600;}
-.ps-reviews{color:#64748B;}
-.ps-price-box{background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.ps-price-main{display:flex;flex-direction:column;}
-.ps-offer{font-size:18px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif;}
-.ps-mrp{font-size:12px;color:#64748B;text-decoration:line-through;}
-.ps-savings{font-size:11px;font-weight:700;color:#6EE7B7;background:rgba(5,150,105,0.2);padding:4px 8px;border-radius:6px;}
-.ps-buy-btn{width:100%;text-align:center;display:block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:13.5px;font-weight:600;padding:10px 0;border-radius:9px;text-decoration:none;transition:background 0.2s;}
-.ps-buy-btn:hover{background:#059669;border-color:#059669;}
+        .ps-card{background:rgba(255, 255, 255, 0.03);border:1px solid rgba(255, 255, 255, 0.08);border-radius:14px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;min-height:310px;}
+        .ps-card-cat{font-size:11px;text-transform:uppercase;color:#94E4C2;font-weight:700;margin-bottom:8px;display:block;}
+        .ps-card-title{font-size:14.5px;font-weight:600;line-height:1.4;color:#fff;margin:0 0 12px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:40px;}
+        .ps-rating-row{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:16px;}
+        .ps-stars{display:flex;align-items:center;gap:4px;color:#facc15;font-weight:600;}
+        .ps-reviews{color:#64748B;}
+        .ps-price-box{background:rgba(255,255,255,0.03);border-radius:10px;padding:12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+        .ps-price-main {display:flex;flex-direction:column;}
+        .ps-offer{font-size:18px;font-weight:700;color:#fff;font-family:'Space Grotesk',sans-serif;}
+        .ps-mrp{font-size:12px;color:#64748B;text-decoration:line-through;}
+        .ps-savings{font-size:11px;font-weight:700;color:#6EE7B7;background:rgba(5,150,105,0.2);padding:4px 8px;border-radius:6px;}
+        .ps-buy-btn{width:100%;text-align:center;display:block;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:13.5px;font-weight:600;padding:10px 0;border-radius:9px;text-decoration:none;transition:background 0.2s;}
+         .ps-buy-btn:hover {background:#059669;border-color:#059669;}
 `}
 
 );
