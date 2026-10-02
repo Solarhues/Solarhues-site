@@ -195,7 +195,3 @@ export default function CustomerAccessPortal() {
     </>
   );
 }
-      </div>
-    </>
-  );
-}
