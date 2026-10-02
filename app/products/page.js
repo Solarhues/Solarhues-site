@@ -71,10 +71,11 @@ export default function ProductsPage() {
           availability are shown on Amazon.
         </p>
 
-       <div
+    <div
   className="filters"
   role="tablist"
   aria-label="Product categories"
+>
 >
   {CATEGORIES.map((item) => {
     const count =
