@@ -71,25 +71,33 @@ export default function ProductsPage() {
           availability are shown on Amazon.
         </p>
 
-        <div className="filters" role="tablist" aria-label="Product categories">
-          {CATEGORIES.map((item) => {
-            const count = item.id === 'All'
-              ? PRODUCTS.length
-              : PRODUCTS.filter((product) => product.category === item.id).length;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={category === item.id}
-                className={category === item.id ? 'active' : ''}
-                onClick={() => setCategory(item.id)}
-              >
-                {item.label} <span>{count}</span>
-              </button>
-            );
-          })}
-        </div>
+       <div
+  className="filters"
+  role="tablist"
+  aria-label="Product categories"
+>
+  {CATEGORIES.map((item) => {
+    const count =
+      item.id === 'All'
+        ? PRODUCTS.length
+        : PRODUCTS.filter(
+            (product) => product.category === item.id
+          ).length;
+
+    return (
+      <button
+        key={item.id}
+        type="button"
+        role="tab"
+        aria-selected={category === item.id}
+        className={category === item.id ? 'active' : ''}
+        onClick={() => setCategory(item.id)}
+      >
+        {item.label} <span>{count}</span>
+      </button>
+    );
+  })}
+</div>
 
         <section className="product-grid" aria-label="Products">
           {products.map((product) => (
