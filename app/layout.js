@@ -16,9 +16,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Providers>
-          <div className="wrap">{children}</div>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
