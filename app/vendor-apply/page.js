@@ -146,9 +146,9 @@ export default function VendorApplyPage() {
             SolarHues
           </Link>
 
-          <Link href="/vendor-login" style={styles.loginLink}>
-            Installer sign in
-          </Link>
+          <Link href="/vendor-apply/form" style={styles.loginLink}>
+  Apply as installer
+</Link>
         </nav>
 
         <section style={styles.hero}>
@@ -165,9 +165,9 @@ export default function VendorApplyPage() {
               installation work progresses.
             </p>
 
-            <Link href="/vendor-login" style={styles.primaryLink}>
-              Start installer application
-            </Link>
+           <Link href="/vendor-apply/form" style={styles.primaryLink}>
+  Start installer application
+</Link>
           </div>
 
           <aside style={styles.panel}>
