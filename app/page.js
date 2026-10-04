@@ -34,12 +34,21 @@ export default function Home() {
         <Link href="/" className={`brand ${grotesk.className}`}>
           <span className="dots"><i /><i /><i /></span>SolarHues
         </Link>
-        <nav className="links">
-          <Link href="/calculator">Calculator</Link>
-          <Link href="/products">Products</Link>
-          <Link href="/vendor-apply">For Installers</Link>
-          <Link href="/login" className="cta">Customer login →</Link>
-        </nav>
+        <nav className="home-nav">
+  <Link href="/" className="home-brand">
+    SolarHues
+  </Link>
+
+  <div className="home-nav-links">
+    <Link href="/calculator">Calculator</Link>
+    <Link href="/products">Products</Link>
+    <Link href="/vendor-apply">For Installers</Link>
+  </div>
+
+  <Link href="/login" className="home-login-link">
+    Customer login →
+  </Link>
+</nav>
       </header>
 
       <main>
