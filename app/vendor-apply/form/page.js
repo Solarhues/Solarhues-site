@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+const MAX_PINCODES = 10;
+
 const inputStyle = {
   width: '100%',
   boxSizing: 'border-box',
@@ -32,6 +34,33 @@ const pageStyle = {
   fontFamily: 'Inter, Arial, sans-serif',
 };
 
+const sectionStyle = {
+  gridColumn: '1 / -1',
+  padding: '22px',
+  border: '1px solid rgba(148, 163, 184, 0.18)',
+  borderRadius: '16px',
+  background: 'rgba(30, 41, 59, 0.48)',
+};
+
+const secondaryButtonStyle = {
+  border: '1px solid rgba(250, 204, 21, 0.65)',
+  borderRadius: '999px',
+  padding: '10px 14px',
+  background: 'transparent',
+  color: '#facc15',
+  font: 'inherit',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+function isValidPincode(value) {
+  return /^[1-9][0-9]{5}$/.test(value);
+}
+
+function getFileName(file) {
+  return file ? file.name : 'No file selected';
+}
+
 export default function VendorApplicationPage() {
   const [form, setForm] = useState({
     companyName: '',
@@ -40,12 +69,21 @@ export default function VendorApplicationPage() {
     phone: '',
     city: '',
     state: '',
-    pincode: '',
     yearsInBusiness: '',
     serviceRadiusKm: '50',
     message: '',
   });
 
+  const [pincodes, setPincodes] = useState(['']);
+  const [documents, setDocuments] = useState({
+    gstCertificate: null,
+    panCard: null,
+    businessRegistration: null,
+    installerCertificate: null,
+    cancelledCheque: null,
+  });
+
+  const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
   function updateField(event) {
@@ -57,10 +95,89 @@ export default function VendorApplicationPage() {
     }));
   }
 
+  function updatePincode(index, value) {
+    const cleanedValue = value.replace(/\D/g, '').slice(0, 6);
+
+    setPincodes((current) =>
+      current.map((pincode, currentIndex) =>
+        currentIndex === index ? cleanedValue : pincode
+      )
+    );
+  }
+
+  function addPincode() {
+    if (pincodes.length >= MAX_PINCODES) return;
+
+    setPincodes((current) => [...current, '']);
+  }
+
+  function removePincode(index) {
+    if (pincodes.length === 1) return;
+
+    setPincodes((current) =>
+      current.filter((_, currentIndex) => currentIndex !== index)
+    );
+  }
+
+  function updateDocument(event) {
+    const { name, files } = event.target;
+
+    setDocuments((current) => ({
+      ...current,
+      [name]: files?.[0] || null,
+    }));
+  }
+
   function handleSubmit(event) {
     event.preventDefault();
+    setError('');
 
-    // Database saving will be added after this form flow is confirmed.
+    const cleanedPincodes = pincodes
+      .map((pincode) => pincode.trim())
+      .filter(Boolean);
+
+    const uniquePincodes = [...new Set(cleanedPincodes)];
+
+    if (uniquePincodes.length === 0) {
+      setError('Please add at least one service pincode.');
+      return;
+    }
+
+    if (uniquePincodes.length > MAX_PINCODES) {
+      setError(`You can add a maximum of ${MAX_PINCODES} service pincodes.`);
+      return;
+    }
+
+    const invalidPincode = uniquePincodes.find(
+      (pincode) => !isValidPincode(pincode)
+    );
+
+    if (invalidPincode) {
+      setError(
+        `"${invalidPincode}" is not a valid Indian pincode. Enter a 6-digit pincode beginning with 1 to 9.`
+      );
+      return;
+    }
+
+    if (!documents.gstCertificate) {
+      setError('Please upload your GST certificate.');
+      return;
+    }
+
+    if (!documents.panCard) {
+      setError('Please upload your PAN card.');
+      return;
+    }
+
+    if (!documents.businessRegistration) {
+      setError('Please upload your business registration document.');
+      return;
+    }
+
+    // The next implementation step will:
+    // 1. create the authenticated vendor profile,
+    // 2. save business details and pincodes,
+    // 3. upload selected documents to private Supabase Storage.
     setSubmitted(true);
   }
 
@@ -68,7 +185,7 @@ export default function VendorApplicationPage() {
     <main style={pageStyle}>
       <div
         style={{
-          width: 'min(760px, 100%)',
+          width: 'min(860px, 100%)',
           margin: '0 auto',
         }}
       >
@@ -127,7 +244,7 @@ export default function VendorApplicationPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                Application received
+                Details checked
               </p>
 
               <h1
@@ -137,35 +254,47 @@ export default function VendorApplicationPage() {
                   fontSize: 'clamp(2rem, 5vw, 3rem)',
                 }}
               >
-                Thanks for your interest.
+                Your application details are ready.
               </h1>
 
               <p
                 style={{
-                  margin: '16px 0 26px',
+                  margin: '16px 0 12px',
                   color: '#cbd5e1',
                   lineHeight: 1.7,
                 }}
               >
-                Your installer application has been recorded as a draft. The
-                next step will be document verification and SolarHues approval
-                before you can receive customer leads.
+                You added {pincodes.filter(Boolean).length} service pincode
+                {pincodes.filter(Boolean).length === 1 ? '' : 's'}.
               </p>
 
-              <Link
-                href="/"
+              <p
                 style={{
-                  display: 'inline-block',
-                  padding: '13px 18px',
-                  borderRadius: '999px',
-                  background: '#facc15',
-                  color: '#422006',
-                  fontWeight: 800,
-                  textDecoration: 'none',
+                  margin: '0 0 26px',
+                  color: '#cbd5e1',
+                  lineHeight: 1.7,
                 }}
               >
-                Return to SolarHues
-              </Link>
+                In the next step, this form will securely save your application
+                and upload documents to SolarHues private storage for review.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setSubmitted(false)}
+                style={{
+                  border: 0,
+                  borderRadius: '999px',
+                  padding: '13px 18px',
+                  background: '#facc15',
+                  color: '#422006',
+                  font: 'inherit',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Edit application
+              </button>
             </div>
           ) : (
             <>
@@ -200,8 +329,9 @@ export default function VendorApplicationPage() {
                   lineHeight: 1.65,
                 }}
               >
-                Submit your basic business details. Applications are reviewed
-                before an installer can receive marketplace leads.
+                Add your company details, up to 10 service pincodes, and
+                verification documents. Approval is required before receiving
+                marketplace leads.
               </p>
 
               <form
@@ -287,19 +417,6 @@ export default function VendorApplicationPage() {
                 </label>
 
                 <label style={labelStyle}>
-                  Primary service pincode
-                  <input
-                    style={inputStyle}
-                    inputMode="numeric"
-                    name="pincode"
-                    value={form.pincode}
-                    onChange={updateField}
-                    placeholder="6-digit pincode"
-                    required
-                  />
-                </label>
-
-                <label style={labelStyle}>
                   Years in business
                   <input
                     style={inputStyle}
@@ -326,6 +443,231 @@ export default function VendorApplicationPage() {
                   />
                 </label>
 
+                <section style={sectionStyle}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: '16px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: '#f8fafc',
+                          fontSize: '1.05rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        Service pincodes
+                      </p>
+
+                      <p
+                        style={{
+                          margin: '6px 0 0',
+                          color: '#94a3b8',
+                          fontSize: '0.86rem',
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Add up to {MAX_PINCODES} 6-digit pincodes where you can
+                        serve solar customers.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={addPincode}
+                      disabled={pincodes.length >= MAX_PINCODES}
+                      style={{
+                        ...secondaryButtonStyle,
+                        opacity: pincodes.length >= MAX_PINCODES ? 0.45 : 1,
+                        cursor:
+                          pincodes.length >= MAX_PINCODES
+                            ? 'not-allowed'
+                            : 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      + Add pincode
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                      gap: '12px',
+                    }}
+                  >
+                    {pincodes.map((pincode, index) => (
+                      <div key={`pincode-${index}`}>
+                        <label style={labelStyle}>
+                          Pincode {index + 1}
+                          <input
+                            style={inputStyle}
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="postal-code"
+                            value={pincode}
+                            onChange={(event) =>
+                              updatePincode(index, event.target.value)
+                            }
+                            placeholder="6-digit pincode"
+                            maxLength="6"
+                            required={index === 0}
+                          />
+                        </label>
+
+                        {pincodes.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => removePincode(index)}
+                            style={{
+                              marginTop: '8px',
+                              border: 0,
+                              background: 'transparent',
+                              color: '#fca5a5',
+                              font: 'inherit',
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              padding: 0,
+                            }}
+                          >
+                            Remove
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+
+                  <p
+                    style={{
+                      margin: '14px 0 0',
+                      color: '#94a3b8',
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    {pincodes.filter(Boolean).length} of {MAX_PINCODES} service
+                    pincodes added.
+                  </p>
+                </section>
+
+                <section style={sectionStyle}>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: '#f8fafc',
+                      fontSize: '1.05rem',
+                      fontWeight: 800,
+                    }}
+                  >
+                    Verification documents
+                  </p>
+
+                  <p
+                    style={{
+                      margin: '6px 0 18px',
+                      color: '#94a3b8',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Upload clear PDF, JPG, JPEG, or PNG files. Keep file size
+                    under 10 MB per document. Your files will be stored
+                    privately and reviewed by SolarHues.
+                  </p>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                      gap: '16px',
+                    }}
+                  >
+                    <label style={labelStyle}>
+                      GST certificate <span style={{ color: '#facc15' }}>*</span>
+                      <input
+                        style={inputStyle}
+                        type="file"
+                        name="gstCertificate"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={updateDocument}
+                        required
+                      />
+                      <small style={{ color: '#94a3b8' }}>
+                        {getFileName(documents.gstCertificate)}
+                      </small>
+                    </label>
+
+                    <label style={labelStyle}>
+                      PAN card <span style={{ color: '#facc15' }}>*</span>
+                      <input
+                        style={inputStyle}
+                        type="file"
+                        name="panCard"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={updateDocument}
+                        required
+                      />
+                      <small style={{ color: '#94a3b8' }}>
+                        {getFileName(documents.panCard)}
+                      </small>
+                    </label>
+
+                    <label style={labelStyle}>
+                      Business registration <span style={{ color: '#facc15' }}>*</span>
+                      <input
+                        style={inputStyle}
+                        type="file"
+                        name="businessRegistration"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={updateDocument}
+                        required
+                      />
+                      <small style={{ color: '#94a3b8' }}>
+                        {getFileName(documents.businessRegistration)}
+                      </small>
+                    </label>
+
+                    <label style={labelStyle}>
+                      Solar installer certificate
+                      <input
+                        style={inputStyle}
+                        type="file"
+                        name="installerCertificate"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={updateDocument}
+                      />
+                      <small style={{ color: '#94a3b8' }}>
+                        {getFileName(documents.installerCertificate)}
+                      </small>
+                    </label>
+
+                    <label
+                      style={{
+                        ...labelStyle,
+                        gridColumn: '1 / -1',
+                      }}
+                    >
+                      Cancelled cheque / bank proof
+                      <input
+                        style={inputStyle}
+                        type="file"
+                        name="cancelledCheque"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={updateDocument}
+                      />
+                      <small style={{ color: '#94a3b8' }}>
+                        {getFileName(documents.cancelledCheque)}
+                      </small>
+                    </label>
+                  </div>
+                </section>
+
                 <label
                   style={{
                     ...labelStyle,
@@ -345,6 +687,24 @@ export default function VendorApplicationPage() {
                     placeholder="System sizes, cities served, brands installed, certifications, past project experience, etc."
                   />
                 </label>
+
+                {error ? (
+                  <p
+                    role="alert"
+                    style={{
+                      gridColumn: '1 / -1',
+                      margin: 0,
+                      padding: '12px 14px',
+                      border: '1px solid rgba(248, 113, 113, 0.35)',
+                      borderRadius: '12px',
+                      background: 'rgba(220, 38, 38, 0.14)',
+                      color: '#fecaca',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {error}
+                  </p>
+                ) : null}
 
                 <div
                   style={{
@@ -367,7 +727,7 @@ export default function VendorApplicationPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    Submit application
+                    Continue to review
                   </button>
                 </div>
               </form>
