@@ -36,15 +36,27 @@ export default function DashboardPage() {
         setError(null);
 
         // Profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+       const { data: profileData, error: profileError } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', user.id)
+  .maybeSingle();
 
-        if (profileError) throw profileError;
-        if (cancelled) return;
-        setProfile(profileData);
+if (profileError) {
+  console.error('Profile query failed:', profileError);
+  throw profileError;
+}
+
+setProfile(
+  profileData || {
+    id: user.id,
+    email: user.email,
+    full_name: '',
+    phone: '',
+    city: '',
+    state: '',
+  }
+);
 
         // Estimates
         const { data: estimatesData, error: estimatesError } = await supabase
