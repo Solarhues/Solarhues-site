@@ -128,7 +128,7 @@ export default function Home() {
         .err { margin: 12px 0 0; color: #fca5a5; font-size: 0.9rem; }
         .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; margin: 28px 0 0; padding: 0; list-style: none; color: #94a3b8; font-size: 0.9rem; }
         .chips li { display: flex; align-items: center; gap: 8px; }
-        .chips b { width: 8px; height: 8px; border-radius: 50%; }
+        .chips b { width: min(100%, 1180px); height: 8px; border-radius: 50%; }
         .how { max-width: 1000px; width: 100%; margin: 0 auto; padding: 24px 20px 72px; }
         .how h2 { margin: 0 0 24px; text-align: center; font-size: 1.7rem; }
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
