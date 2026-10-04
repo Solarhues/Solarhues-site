@@ -55,34 +55,38 @@ export default function CustomerAccessPortal() {
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setMsgText('');
-    setMsgStyle({ display: 'none' });
+  e.preventDefault();
 
-    const cleanEmail = email.trim().toLowerCase();
-    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-      showMsg('Enter a valid email address.', false);
-      return;
-    }
+  const cleanEmail = email.trim().toLowerCase();
 
-    setIsDisabled(true);
-    setBtnText('Sending link...');
-    try {
-     const { error } = await sb.auth.signInWithOtp({
-  email: cleanEmail,
-  options: {
-    emailRedirectTo: `${window.location.origin}/auth/callback`,
-  },
-});
-      if (error) throw error;
-      showMsg('Check your inbox! We sent a secure link.', true);
-    } catch (err) {
-      showMsg(err.message || 'Authentication failed.', false);
-    } finally {
-      setIsDisabled(false);
-      setBtnText('Send Magic Link');
-    }
-  };
+  if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+    showMsg('Enter a valid email address.', false);
+    return;
+  }
+
+  setIsDisabled(true);
+  setBtnText('Sending link...');
+
+  try {
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
+
+    if (error) throw error;
+
+    showMsg('Check your inbox! We sent a secure link.', true);
+  } catch (err) {
+    showMsg(err.message || 'Authentication failed.', false);
+  } finally {
+    setIsDisabled(false);
+    setBtnText('Send Magic Link');
+  }
+};
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
