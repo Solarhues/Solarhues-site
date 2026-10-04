@@ -70,12 +70,12 @@ export default function CustomerAccessPortal() {
   try {
     const redirectUrl = `${window.location.origin}/auth/callback`;
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
+   const { error } = await sb.auth.signInWithOtp({
+  email: cleanEmail,
+  options: {
+    emailRedirectTo: `${window.location.origin}/auth/callback`,
+  },
+});
 
     if (error) throw error;
 
