@@ -5,6 +5,28 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../providers';
 
+function formatDate(value) {
+  if (!value) return '—';
+
+  return new Date(value).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+
+  return `₹${Number(value).toLocaleString('en-IN')}`;
+}
+
+function EmptyState({ children }) {
+  return <p className="dashboard-empty">{children}</p>;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -17,14 +39,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
-  // Load dashboard data
   useEffect(() => {
     if (!user) return;
 
@@ -35,30 +55,14 @@ export default function DashboardPage() {
         setLoading(true);
         setError(null);
 
-        // Profile
-       const { data: profileData, error: profileError } = await supabase
-  .from('profiles')
-  .select('*')
-  .eq('id', user.id)
-  .maybeSingle();
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
-if (profileError) {
-  console.error('Profile query failed:', profileError);
-  throw profileError;
-}
+        if (profileError) throw profileError;
 
-setProfile(
-  profileData || {
-    id: user.id,
-    email: user.email,
-    full_name: '',
-    phone: '',
-    city: '',
-    state: '',
-  }
-);
-
-        // Estimates
         const { data: estimatesData, error: estimatesError } = await supabase
           .from('solar_estimates')
           .select('*')
@@ -66,10 +70,7 @@ setProfile(
           .order('created_at', { ascending: false });
 
         if (estimatesError) throw estimatesError;
-        if (cancelled) return;
-        setEstimates(estimatesData || []);
 
-        // Quote requests
         const { data: requestsData, error: requestsError } = await supabase
           .from('quote_requests')
           .select('*')
@@ -77,44 +78,55 @@ setProfile(
           .order('created_at', { ascending: false });
 
         if (requestsError) throw requestsError;
-        if (cancelled) return;
-        setQuoteRequests(requestsData || []);
 
-        // Quotes (via quote_requests -> quotes join)
-        const requestIds = (requestsData || []).map((r) => r.id);
+        const requestIds = (requestsData || []).map((request) => request.id);
 
         let quotesData = [];
+
         if (requestIds.length > 0) {
-          const { data: quotesDataRaw, error: quotesError } = await supabase
+          const { data, error: quotesError } = await supabase
             .from('quotes')
             .select('*')
             .in('request_id', requestIds)
             .order('created_at', { ascending: false });
 
           if (quotesError) throw quotesError;
-          quotesData = quotesDataRaw || [];
+          quotesData = data || [];
         }
-        if (cancelled) return;
-        setQuotes(quotesData);
 
-        // Payments (linked to customer via quote_requests or directly via customer_id if you add it)
-        // For MVP, we assume quotes have customer_id or you can join via request_id.
-        const quoteIds = quotesData.map((q) => q.id);
+        const quoteIds = quotesData.map((quote) => quote.id);
+
         let paymentsData = [];
+
         if (quoteIds.length > 0) {
-          const { data: paymentsDataRaw, error: paymentsError } = await supabase
+          const { data, error: paymentsError } = await supabase
             .from('payments')
             .select('*')
             .in('quote_id', quoteIds)
             .order('created_at', { ascending: false });
 
           if (paymentsError) throw paymentsError;
-          paymentsData = paymentsDataRaw || [];
+          paymentsData = data || [];
         }
-        if (cancelled) return;
-        setPayments(paymentsData);
+
+        if (!cancelled) {
+          setProfile(
+            profileData || {
+              email: user.email,
+              full_name: '',
+              phone: '',
+              city: '',
+              state: '',
+            }
+          );
+          setEstimates(estimatesData || []);
+          setQuoteRequests(requestsData || []);
+          setQuotes(quotesData);
+          setPayments(paymentsData);
+        }
       } catch (err) {
         console.error('Dashboard load error:', err);
+
         if (!cancelled) {
           setError('Failed to load dashboard data. Please try again.');
         }
@@ -134,176 +146,258 @@ setProfile(
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#1e293b] text-white flex items-center justify-center">
-        <p className="text-lg">Loading dashboard…</p>
-      </div>
+      <main className="dashboard-page">
+        <div className="dashboard-loading">Loading your dashboard…</div>
+      </main>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#1e293b] text-white flex items-center justify-center">
-        <p className="text-lg text-red-400">{error}</p>
-      </div>
+      <main className="dashboard-page">
+        <div className="dashboard-error">{error}</div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#1e293b] text-white">
-      <header className="border-b border-slate-700">
-        <div className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Customer Dashboard</h1>
-          <div className="text-sm text-slate-300">
-            {profile?.email}
+    <main className="dashboard-page">
+      <div className="dashboard-shell">
+        <header className="dashboard-header">
+          <div>
+            <p className="dashboard-eyebrow">SolarHues</p>
+            <h1>Customer Dashboard</h1>
+            <p className="dashboard-subtitle">
+              Track your solar estimate, quotes, and project progress.
+            </p>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-10">
-        {/* Profile summary */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Profile</h2>
-          <div className="bg-slate-800 rounded-lg p-4">
-            <p className="text-slate-300">
-              Name: {profile?.full_name || 'Not set'}
-            </p>
-            <p className="text-slate-300">
-              Phone: {profile?.phone || 'Not set'}
-            </p>
-            <p className="text-slate-300">
-              City: {profile?.city || 'Not set'}
-            </p>
-            <p className="text-slate-300">
-              State: {profile?.state || 'Not set'}
-            </p>
+          <div className="dashboard-account">
+            <span className="account-label">Signed in as</span>
+            <span>{profile?.email || user?.email}</span>
+          </div>
+        </header>
+
+        <section className="dashboard-stats">
+          <div className="stat-card">
+            <span className="stat-label">Solar estimates</span>
+            <strong>{estimates.length}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-label">Quote requests</span>
+            <strong>{quoteRequests.length}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-label">Quotes received</span>
+            <strong>{quotes.length}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span className="stat-label">Project milestones</span>
+            <strong>{payments.length}</strong>
           </div>
         </section>
 
-        {/* Solar estimates */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Your solar estimates</h2>
+        <section className="dashboard-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Account</p>
+              <h2>Your profile</h2>
+            </div>
+          </div>
+
+          <div className="profile-grid">
+            <div>
+              <span className="field-label">Name</span>
+              <span>{profile?.full_name || 'Not set'}</span>
+            </div>
+
+            <div>
+              <span className="field-label">Phone</span>
+              <span>{profile?.phone || 'Not set'}</span>
+            </div>
+
+            <div>
+              <span className="field-label">City</span>
+              <span>{profile?.city || 'Not set'}</span>
+            </div>
+
+            <div>
+              <span className="field-label">State</span>
+              <span>{profile?.state || 'Not set'}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="dashboard-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Calculator</p>
+              <h2>Your solar estimates</h2>
+            </div>
+
+            <button
+              className="primary-button"
+              onClick={() => router.push('/calculator')}
+            >
+              New estimate
+            </button>
+          </div>
+
           {estimates.length === 0 ? (
-            <p className="text-slate-300">
-              No estimates yet. Use the calculator to create one.
-            </p>
+            <EmptyState>
+              No estimates yet. Start with the solar calculator to understand
+              your possible system size and savings.
+            </EmptyState>
           ) : (
-            <div className="space-y-4">
-              {estimates.map((est) => (
-                <div key={est.id} className="bg-slate-800 rounded-lg p-4">
-                  <p className="text-slate-300">
-                    Roof area: {est.roof_area_sqft} sq ft
-                  </p>
-                  <p className="text-slate-300">
-                    Monthly bill: ₹{est.monthly_bill_inr}
-                  </p>
-                  <p className="text-slate-300">
-                    Recommended system: {est.recommended_system_kw} kW
-                  </p>
-                  <p className="text-slate-300">
-                    Estimated generation: {est.estimated_generation_kwh_per_year} kWh/year
-                  </p>
-                  <p className="text-slate-300">
-                    Created: {new Date(est.created_at).toLocaleString()}
-                  </p>
-                </div>
+            <div className="record-grid">
+              {estimates.map((estimate) => (
+                <article className="record-card" key={estimate.id}>
+                  <div className="record-card-top">
+                    <span className="status-badge">Estimate</span>
+                    <span>{formatDate(estimate.created_at)}</span>
+                  </div>
+
+                  <h3>
+                    {estimate.recommended_system_kw || '—'} kW recommended
+                  </h3>
+
+                  <div className="record-details">
+                    <span>
+                      Monthly bill:{' '}
+                      {formatCurrency(estimate.monthly_bill_inr)}
+                    </span>
+                    <span>
+                      Roof area: {estimate.roof_area_sqft || '—'} sq ft
+                    </span>
+                  </div>
+                </article>
               ))}
             </div>
           )}
         </section>
 
-        {/* Quote requests */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Quote requests</h2>
+        <section className="dashboard-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Marketplace</p>
+              <h2>Quote requests</h2>
+            </div>
+          </div>
+
           {quoteRequests.length === 0 ? (
-            <p className="text-slate-300">
-              No quote requests yet.
-            </p>
+            <EmptyState>
+              No quote requests yet. Once you submit a request, matched
+              installers will be shown here.
+            </EmptyState>
           ) : (
-            <div className="space-y-4">
-              {quoteRequests.map((req) => (
-                <div key={req.id} className="bg-slate-800 rounded-lg p-4">
-                  <p className="text-slate-300">
-                    Request ID: {req.id}
-                  </p>
-                  <p className="text-slate-300">
-                    Status: {req.status || 'pending'}
-                  </p>
-                  <p className="text-slate-300">
-                    Created: {new Date(req.created_at).toLocaleString()}
-                  </p>
-                </div>
+            <div className="record-grid">
+              {quoteRequests.map((request) => (
+                <article className="record-card" key={request.id}>
+                  <div className="record-card-top">
+                    <span className="status-badge">
+                      {request.status || 'Pending'}
+                    </span>
+                    <span>{formatDate(request.created_at)}</span>
+                  </div>
+
+                  <h3>Installer quotes request</h3>
+
+                  <div className="record-details">
+                    <span>Pincode: {request.pincode || '—'}</span>
+                    <span>
+                      System size: {request.preferred_system_kw || '—'} kW
+                    </span>
+                  </div>
+                </article>
               ))}
             </div>
           )}
         </section>
 
-        {/* Quotes */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Quotes received</h2>
+        <section className="dashboard-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Compare</p>
+              <h2>Quotes received</h2>
+            </div>
+          </div>
+
           {quotes.length === 0 ? (
-            <p className="text-slate-300">
-              No quotes yet. Vendors will send quotes after you request them.
-            </p>
+            <EmptyState>
+              No installer quotes yet. Quotes will appear here after vendors
+              respond to your request.
+            </EmptyState>
           ) : (
-            <div className="space-y-4">
-              {quotes.map((q) => (
-                <div key={q.id} className="bg-slate-800 rounded-lg p-4">
-                  <p className="text-slate-300">
-                    Quote ID: {q.id}
-                  </p>
-                  <p className="text-slate-300">
-                    System size: {q.system_size_kw} kW
-                  </p>
-                  <p className="text-slate-300">
-                    Total price: ₹{q.total_price_inr}
-                  </p>
-                  <p className="text-slate-300">
-                    Platform fee: ₹{q.platform_fee_inr}
-                  </p>
-                  <p className="text-slate-300">
-                    Customer price: ₹{q.customer_price_inr}
-                  </p>
-                  <p className="text-slate-300">
-                    Status: {q.status || 'pending'}
-                  </p>
-                  <p className="text-slate-300">
-                    Created: {new Date(q.created_at).toLocaleString()}
-                  </p>
-                </div>
+            <div className="record-grid">
+              {quotes.map((quote) => (
+                <article className="record-card" key={quote.id}>
+                  <div className="record-card-top">
+                    <span className="status-badge">
+                      {quote.status || 'Submitted'}
+                    </span>
+                    <span>{formatDate(quote.created_at)}</span>
+                  </div>
+
+                  <h3>
+                    {quote.system_size_kw || '—'} kW solar system
+                  </h3>
+
+                  <div className="record-details">
+                    <span>
+                      Customer price:{' '}
+                      {formatCurrency(quote.customer_price_inr)}
+                    </span>
+                    <span>
+                      Installation days:{' '}
+                      {quote.estimated_installation_days || '—'}
+                    </span>
+                  </div>
+                </article>
               ))}
             </div>
           )}
         </section>
 
-        {/* Milestones / payments */}
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Project milestones</h2>
+        <section className="dashboard-card">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Project tracking</p>
+              <h2>Project milestones</h2>
+            </div>
+          </div>
+
           {payments.length === 0 ? (
-            <p className="text-slate-300">
-              No milestones yet. They will appear once you select a vendor and start a project.
-            </p>
+            <EmptyState>
+              Project milestones will appear after you select an installer and
+              begin the project.
+            </EmptyState>
           ) : (
-            <div className="space-y-4">
-              {payments.map((p) => (
-                <div key={p.id} className="bg-slate-800 rounded-lg p-4">
-                  <p className="text-slate-300">
-                    Milestone: {p.milestone_type}
-                  </p>
-                  <p className="text-slate-300">
-                    Amount: ₹{p.amount_inr}
-                  </p>
-                  <p className="text-slate-300">
-                    Status: {p.status || 'pending'}
-                  </p>
-                  <p className="text-slate-300">
-                    Updated: {new Date(p.updated_at).toLocaleString()}
-                  </p>
-                </div>
+            <div className="record-grid">
+              {payments.map((payment) => (
+                <article className="record-card" key={payment.id}>
+                  <div className="record-card-top">
+                    <span className="status-badge">
+                      {payment.status || 'Pending'}
+                    </span>
+                    <span>{formatDate(payment.updated_at)}</span>
+                  </div>
+
+                  <h3>{payment.milestone || payment.milestone_type}</h3>
+
+                  <div className="record-details">
+                    <span>
+                      Amount: {formatCurrency(payment.amount_inr)}
+                    </span>
+                  </div>
+                </article>
               ))}
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
