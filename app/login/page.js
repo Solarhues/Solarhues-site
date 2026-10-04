@@ -68,12 +68,12 @@ export default function CustomerAccessPortal() {
     setIsDisabled(true);
     setBtnText('Sending link...');
     try {
-      const { error } = await sb.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-  emailRedirectTo: `${window.location.origin}/auth/callback`,
-},
-      });
+     const { error } = await sb.auth.signInWithOtp({
+  email: cleanEmail,
+  options: {
+    emailRedirectTo: `${window.location.origin}/auth/callback`,
+  },
+});
       if (error) throw error;
       showMsg('Check your inbox! We sent a secure link.', true);
     } catch (err) {
