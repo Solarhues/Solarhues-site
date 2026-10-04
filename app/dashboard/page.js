@@ -1,128 +1,241 @@
 'use client';
-import React from 'react';
-import { useAuth } from '../layout';
-import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://xnlhgnnxunqghvdfuvke.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_xNBsUzhB6ujPKglfHpQkqQ_zNNpgBmH';
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { supabase } from '../../lib/supabase';
 
-export default function CustomerDashboard() {
-  const { user, loading } = useAuth();
+const TARIFF = 7.5;
+const YIELD_PER_KW = 120;
+const SQFT_PER_KW = 100;
+const COST_PER_KW = 60000;
 
-  const handleLogout = async () => {
-    await sb.auth.signOut();
-    window.location.href = '/';
-  };
+function subsidyFor(kw) {
+  if (kw >= 3) return 78000;
+  if (kw >= 2) return 60000;
+  if (kw >= 1) return 30000;
+  return 0;
+}
+
+function sizeSystem(profile, bill) {
+  if (!profile?.roof_area_sqft || !bill) return null;
+  const unitsNeeded = bill / TARIFF;
+  const kwByBill = unitsNeeded / YIELD_PER_KW;
+  const kwByRoof = profile.roof_area_sqft / SQFT_PER_KW;
+  const kw = Math.max(1, Math.floor(Math.min(kwByBill, kwByRoof)));
+  const gross = kw * COST_PER_KW;
+  const subsidy = subsidyFor(kw);
+  const net = gross - subsidy;
+  const yearlySavings = kw * YIELD_PER_KW * 12 * TARIFF;
+  const payback = net / yearlySavings;
+  return { kw, gross, subsidy, net, yearlySavings, payback };
+}
+
+const inr = (n) => '₹' + Math.round(Number(n || 0)).toLocaleString('en-IN');
+
+export default function DashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [estimate, setEstimate] = useState(null);
+  const [requests, setRequests] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function loadAll(userId) {
+    const [est, req, pay] = await Promise.all([
+      supabase.from('solar_estimates').select('*').eq('customer_id', userId).order('created_at', { ascending: false }).limit(1),
+      supabase.from('quote_requests').select('*').eq('customer_id', userId).order('created_at', { ascending: false }),
+      supabase.from('payments').select('*').eq('customer_id', userId).order('created_at', { ascending: true }),
+    ]);
+    setEstimate(est.data?.[0] || null);
+    const reqs = req.data || [];
+    setRequests(reqs);
+    setPayments(pay.data || []);
+
+    if (reqs.length > 0) {
+      const ids = reqs.map((r) => r.id);
+      const { data: q } = await supabase
+        .from('quotes')
+        .select('*, vendors(company_name, google_rating)')
+        .in('request_id', ids)
+        .order('created_at', { ascending: false });
+      setQuotes(q || []);
+    } else {
+      setQuotes([]);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        window.location.href = '/login';
+        return;
+      }
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      if (!active) return;
+      if (p?.role === 'admin') { window.location.href = '/admin'; return; }
+      if (p?.role === 'vendor') { window.location.href = '/vendor-dashboard'; return; }
+      if (!p || !p.full_name || !p.mobile || !p.pincode) {
+        window.location.href = '/login';
+        return;
+      }
+      setProfile(p);
+      await loadAll(session.user.id);
+      if (active) setLoading(false);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  async function requestQuotes() {
+    if (!profile) return;
+    const sized = sizeSystem(profile, estimate?.monthly_bill);
+    setBusy(true);
+    const { error } = await supabase.from('quote_requests').insert({
+      customer_id: profile.id,
+      estimate_id: estimate?.id || null,
+      tentative_kw: sized?.kw || null,
+    });
+    setBusy(false);
+    if (error) {
+      setNote('Could not create your request: ' + error.message);
+    } else {
+      setNote('Your quote request has been created. Installers near you will be notified once matching is live.');
+      await loadAll(profile.id);
+    }
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  }
 
   if (loading) {
     return (
-      <div className="center">
-        <p style={{ fontFamily: "'Inter', sans-serif", color: '#CBD5E1' }}>Securing credential pathways...</p>
+      <div className="dash">
+        <p className="muted">Loading your dashboard...</p>
+        <style jsx>{styles}</style>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <>
-        <div className="top">
-          <a href="/" className="brand">
-            <span className="hue-dots">
-              <span></span><span></span><span></span>
-            </span>
-            SolarHues
-          </a>
-        </div>
-        <div className="center">
-          <div className="kicker" style={{ color: '#FCA5A5' }}>Access Restriction</div>
-          <h1 style={{ marginBottom: '16px' }}>Secure Portal Wall</h1>
-          <p className="sub" style={{ marginBottom: '24px' }}>You must be authenticated via a passwordless Magic Link to enter your private metrics hub.</p>
-          <a href="/login" className="pill-status" style={{ background: 'var(--sun)', color: '#1e293b', fontWeight: '700' }}>
-            Go to Login Portal
-          </a>
-        </div>
-      </>
-    );
-  }
+  const sized = sizeSystem(profile, estimate?.monthly_bill);
+  const hasOpenRequest = requests.some((r) => r.status !== 'cancelled' && r.status !== 'completed');
 
   return (
-    <>
-      <div className="top">
-        <a href="/" className="brand">
-          <span className="hue-dots">
-            <span></span><span></span><span></span>
-          </span>
-          SolarHues
-        </a>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <a href="/calculator" className="pill-status">Calculator</a>
-          <a href="/products" className="pill-status">Products</a>
-          <button 
-            onClick={handleLogout} 
-            className="pill-status" 
-            style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: '#EF4444', color: '#FCA5A5', cursor: 'pointer' }}
-          >
-            Logout
-          </button>
+    <div className="dash">
+      <header className="bar">
+        <Link href="/" className="logo">SolarHues</Link>
+        <div className="barlinks">
+          <Link href="/calculator">Calculator</Link>
+          <Link href="/products">Products</Link>
+          <button onClick={signOut}>Sign out</button>
         </div>
-      </div>
+      </header>
 
-      <div className="center" style={{ display: 'block', maxWidth: '800px', margin: '0 auto', padding: '40px 24px', textAlign: 'left' }}>
-        <div className="kicker">Verified Account Hub</div>
-        <h1 style={{ fontSize: '36px', marginBottom: '8px' }}>
-          Welcome back, <span className="hue">{user.email.split('@')[0]}</span>
-        </h1>
-        <p className="sub" style={{ marginTop: '0', marginBottom: '40px' }}>
-          Account Reference ID: <span style={{ color: '#94A3B8', fontFamily: 'monospace' }}>{user.id.substring(0, 8)}...</span>
+      <main className="content">
+        <h1>Welcome, {profile.full_name}</h1>
+        <p className="muted">
+          {profile.email} - {profile.mobile} - Pincode {profile.pincode}
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '20px', borderRadius: '12px' }}>
-            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Authentication Method</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff', fontFamily: 'Space Grotesk' }}>Passwordless OTP</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '20px', borderRadius: '12px' }}>
-            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Quote Request</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--sun)', fontFamily: 'Space Grotesk' }}>1 Pipeline Live</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '20px', borderRadius: '12px' }}>
-            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Verification Status</div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--emerald)', fontFamily: 'Space Grotesk' }}>KYC Approved</div>
-          </div>
-        </div>
+        {note && <div className="note">{note}</div>}
 
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '14px', padding: '28px' }}>
-          <h3 style={{ margin: '0 0 8px 0', fontFamily: "'Space Grotesk', sans-serif", fontSize: '20px', color: '#fff' }}>Your Solar Pipeline</h3>
-          <p style={{ fontSize: '14px', color: '#CBD5E1', margin: '0 0 24px 0' }}>Track the bids and vetting progress of localized EPC engineers assigned to your profile matching your solar requirement metrics.</p>
+        <section className="panel">
+          <h2>Your solar estimate</h2>
+          {!sized && <p className="muted">Add your roof area and monthly bill to see an estimate.</p>}
+          {sized && (
+            <>
+              <div className="stats">
+                <div><span>System size</span><b>{sized.kw} kW</b></div>
+                <div><span>Cost before subsidy</span><b>{inr(sized.gross)}</b></div>
+                <div><span>PM Surya Ghar subsidy</span><b>{inr(sized.subsidy)}</b></div>
+                <div><span>Net cost</span><b>{inr(sized.net)}</b></div>
+                <div><span>Yearly savings</span><b>{inr(sized.yearlySavings)}</b></div>
+                <div><span>Payback</span><b>{sized.payback.toFixed(1)} years</b></div>
+              </div>
+              <p className="fine">
+                Estimate based on a tariff of Rs 7.5 per unit, 120 units per kW per month and Rs 60,000 per kW. Final prices come from installer quotes.
+              </p>
+            </>
+          )}
+          {!hasOpenRequest && (
+            <button className="primary" onClick={requestQuotes} disabled={busy}>
+              {busy ? 'Creating request...' : 'Request quotes from installers'}
+            </button>
+          )}
+        </section>
 
-          <div style={{ background: 'rgba(0,0,0,0.15)', borderRadius: '10px', padding: '20px', borderLeft: '4px solid var(--sun)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ fontWeight: '700', fontSize: '15px', color: '#fff', fontFamily: "'Space Grotesk', sans-serif" }}>5 kW Residential Rooftop Grid Matrix</span>
-              <span style={{ fontSize: '12px', background: 'rgba(250, 204, 21, 0.1)', color: 'var(--sun)', border: '1px solid var(--sun)', padding: '4px 10px', borderRadius: '20px', fontWeight: 'bold' }}>
-                Matching Installers
-              </span>
+        <section className="panel">
+          <h2>Quotes</h2>
+          {quotes.length === 0 && <p className="muted">No quotes yet. They will appear here when installers respond.</p>}
+          {quotes.map((q) => (
+            <div className="row" key={q.id}>
+              <div>
+                <b>{q.vendors?.company_name || 'Installer'}</b>
+                <div className="muted">
+                  Rating: {q.vendors?.google_rating ? q.vendors.google_rating + ' / 5' : 'New'}
+                </div>
+              </div>
+              <div className="right">
+                <b>{inr(q.customer_price)}</b>
+                <div className="muted">includes 6% platform fee</div>
+              </div>
             </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px', color: '#94A3B8', marginBottom: '16px' }}>
-              <div>Assigned Target Area: <strong style={{ color: '#fff' }}>Zone Checked</strong></div>
-              <div>Est. Payback Window: <strong style={{ color: 'var(--emerald)' }}>4.2 Years</strong></div>
+          ))}
+        </section>
+
+        <section className="panel">
+          <h2>Payment milestones</h2>
+          {payments.length === 0 && <p className="muted">No payments yet. Milestones appear after you choose an installer.</p>}
+          {payments.map((p) => (
+            <div className="row" key={p.id}>
+              <div>
+                <b>{p.stage.replace('_', ' ')}</b>
+                <div className="muted">{p.pct}% of project price</div>
+              </div>
+              <div className="right">
+                <b>{inr(p.amount)}</b>
+                <div className={'pill ' + p.status}>{p.status.replace('_', ' ')}</div>
+              </div>
             </div>
+          ))}
+        </section>
+      </main>
 
-            <p style={{ fontSize: '12.5px', color: '#64748B', margin: '0', fontStyle: 'italic' }}>
-              *System Notice: 3 verified EPC vendors within your regional territory are currently analyzing your roof geometry. Quotes will compile automatically in this layout.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bottom" style={{ marginTop: 'auto' }}>
-        <div>© 2026 SolarHues. All rights reserved.</div>
-        <div className="footer-links">
-          <a href="/">Home</a>
-          <a href="/privacy">Privacy</a>
-        </div>
-      </div>
-    </>
+      <style jsx>{styles}</style>
+    </div>
   );
 }
+
+const styles = `
+  .dash { min-height: 100vh; background: #1e293b; color: #f8fafc; font-family: Inter, sans-serif; }
+  .bar { display: flex; justify-content: space-between; align-items: center; padding: 18px clamp(16px, 5vw, 48px); border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .logo { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.2rem; color: #fff; text-decoration: none; }
+  .barlinks { display: flex; gap: 16px; align-items: center; }
+  .barlinks a { color: #cbd5e1; text-decoration: none; font-size: 0.9rem; }
+  .barlinks a:hover { color: #facc15; }
+  .barlinks button { padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); background: transparent; color: #e2e8f0; cursor: pointer; }
+  .content { max-width: 900px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-family: 'Space Grotesk', sans-serif; font-size: 1.9rem; margin: 0 0 6px; }
+  h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; margin: 0 0 16px; }
+  .muted { color: #94a3b8; font-size: 0.9rem; }
+  .note { margin: 16px 0; padding: 12px 16px; border-radius: 10px; background: rgba(5,150,105,0.15); color: #6ee7b7; }
+  .panel { margin-top: 24px; padding: 24px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stats div { padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.04); }
+  .stats span { display: block; color: #94a3b8; font-size: 0.8rem; margin-bottom: 4px; }
+  .stats b { font-size: 1.15rem; color: #facc15; }
+  .fine { margin-top: 14px; color: #64748b; font-size: 0.8rem; }
+  .primary { margin-top: 18px; padding: 13px 22px; border: none; border-radius: 10px; background: #facc15; color: #1e293b; font-weight: 700; cursor: pointer; }
+  .primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+  .right { text-align: right; }
+  .pill { display: inline-block; margin-top: 4px; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; background: rgba(56,189,248,0.15); color: #7dd3fc; }
+  .pill.in_escrow, .pill.released { background: rgba(5,150,105,0.18); color: #6ee7b7; }
+  .pill.due { background: rgba(250,204,21,0.15); color: #facc15; }
+  .pill.refunded { background: rgba(239,68,68,0.15); color: #fca5a5; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+`;
