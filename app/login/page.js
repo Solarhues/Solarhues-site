@@ -1,203 +1,189 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { supabase as sb } from '../../lib/supabase';
 
-export default function CustomerAccessPortal() {
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../providers';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
+
   const [email, setEmail] = useState('');
-  const [btnText, setBtnText] = useState('Send Magic Link');
-  const [isDisabled, setIsDisabled] = useState(false);
-  const [msgText, setMsgText] = useState('');
-  const [msgStyle, setMsgStyle] = useState({ display: 'none' });
-
-  const [isNewUser, setIsNewUser] = useState(false);
-  const [activeUser, setActiveUser] = useState(null);
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [pincode, setPincode] = useState('');
-  const [roofArea, setRoofArea] = useState('');
-  const [roofType, setRoofType] = useState('Concrete Flat Roof');
-  const [monthlyBill, setMonthlyBill] = useState('');
-  const [saving, setSaving] = useState(false);
-  const checkedFor = useRef(null);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [finishingLogin, setFinishingLogin] = useState(true);
 
   useEffect(() => {
-    sb.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) checkProfile(session.user);
-    });
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) checkProfile(session.user);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    let active = true;
 
-  const checkProfile = async (user) => {
-    if (checkedFor.current === user.id) return;
-    checkedFor.current = user.id;
-    setActiveUser(user);
+    async function finishImplicitLogin() {
+      const hash = window.location.hash;
 
-    const { data } = await sb
-      .from('profiles')
-      .select('role, full_name, mobile, pincode')
-      .eq('id', user.id)
-      .single();
+      if (!hash || !hash.includes('access_token=')) {
+        if (active) {
+          setFinishingLogin(false);
+        }
+        return;
+      }
 
-    if (data?.role === 'admin') { window.location.href = '/admin'; return; }
-    if (data?.role === 'vendor') { window.location.href = '/vendor-dashboard'; return; }
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
 
-    const complete = data && data.full_name && data.mobile && data.pincode;
-    if (complete) window.location.href = '/dashboard';
-    else setIsNewUser(true);
-  };
+      if (!accessToken || !refreshToken) {
+        if (active) {
+          setError('The sign-in link is incomplete. Please request a new one.');
+          setFinishingLogin(false);
+        }
+        return;
+      }
 
-  const showMsg = (text, ok) => {
-    setMsgStyle({ display: 'block', color: ok ? '#6EE7B7' : '#FCA5A5', fontSize: '13.5px', marginTop: '12px', fontWeight: 'bold' });
-    setMsgText(text);
-  };
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
 
-  const handleLogin = async (e) => {
-  e.preventDefault();
+      if (sessionError) {
+        console.error('Magic link session error:', sessionError);
 
-  const cleanEmail = email.trim().toLowerCase();
+        if (active) {
+          setError(
+            sessionError.message ||
+              'This sign-in link is invalid or has expired. Please request a new one.'
+          );
+          setFinishingLogin(false);
+        }
+        return;
+      }
 
-  if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-    showMsg('Enter a valid email address.', false);
-    return;
-  }
+      window.history.replaceState(
+        {},
+        document.title,
+        `${window.location.pathname}${window.location.search}`
+      );
 
-  setIsDisabled(true);
-  setBtnText('Sending link...');
-
-  try {
-    const redirectUrl = `${window.location.origin}/auth/callback`;
-
-   const { error } = await sb.auth.signInWithOtp({
-  email: cleanEmail,
-  options: {
-    emailRedirectTo: `${window.location.origin}/auth/callback`,
-  },
-});
-
-    if (error) throw error;
-
-    showMsg('Check your inbox! We sent a secure link.', true);
-  } catch (err) {
-    showMsg(err.message || 'Authentication failed.', false);
-  } finally {
-    setIsDisabled(false);
-    setBtnText('Send Magic Link');
-  }
-};
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    if (pincode.length !== 6 || phone.length !== 10) {
-      alert('Please enter a 10-digit mobile number and a 6-digit pincode.');
-      return;
+      if (active) {
+        router.replace('/dashboard');
+      }
     }
-    setSaving(true);
 
-    const { error } = await sb
-      .from('profiles')
-      .update({
-        full_name: fullName.trim(),
-        mobile: phone,
-        pincode,
-        roof_area_sqft: Number(roofArea),
-        roof_type: roofType,
-      })
-      .eq('id', activeUser.id);
+    finishImplicitLogin();
 
-    if (error) {
-      setSaving(false);
-      alert('Could not save your profile: ' + error.message);
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    const authError = searchParams.get('error');
+
+    if (authError && authError !== 'missing_code') {
+      setError(authError);
+    }
+  }, [searchParams]);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
       return;
     }
 
-    await sb.from('solar_estimates').insert({
-      customer_id: activeUser.id,
-      pincode,
-      roof_type: roofType,
-      roof_area_sqft: Number(roofArea),
-      monthly_bill: Number(monthlyBill),
+    setSubmitting(true);
+    setStatus('');
+    setError('');
+
+    const { error: signInError } = await supabase.auth.signInWithOtp({
+      email: trimmedEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
 
-    window.location.href = '/dashboard';
-  };
+    if (signInError) {
+      console.error('Magic link request failed:', signInError);
+      setError(signInError.message || 'Could not send the magic link.');
+      setSubmitting(false);
+      return;
+    }
+
+    setStatus(
+      'Check your inbox for a new SolarHues sign-in link. Open the newest email to continue.'
+    );
+    setSubmitting(false);
+  }
+
+  if (authLoading || finishingLogin) {
+    return (
+      <main className="login-page">
+        <div className="login-card">
+          <p className="login-loading">Completing sign-in…</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <>
-      <style>{`
-        .form-box { width: 100%; max-width: 480px; margin-top: 24px; text-align: left; padding: 0 16px; }
-        .row-item { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-        .grid-split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .inp { padding: 14px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; }
-        .inp:focus { border-color: var(--sun, #facc15); }
-        .s-btn { width: 100%; padding: 14px; border-radius: 8px; background: var(--sun, #facc15); color: #1e293b; font-weight: 700; border: none; cursor: pointer; font-size: 15px; margin-top: 10px; }
-        .s-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-      `}</style>
-
-      <div className="top">
-        <a href="/" className="brand">
-          <span className="hue-dots"><span></span><span></span><span></span></span>SolarHues
+    <main className="login-page">
+      <section className="login-card">
+        <a className="login-brand" href="/">
+          SolarHues
         </a>
-      </div>
 
-      <div className="center" style={{ padding: '24px 16px' }}>
-        {!isNewUser ? (
-          <div className="form-box">
-            <div className="kicker">Access Portal</div>
-            <h1>Log In or Sign Up</h1>
-            <p className="sub" style={{ marginBottom: '24px' }}>Enter your email below. New users can securely register their rooftop details in the next step.</p>
-            <form onSubmit={handleLogin} style={{ display: 'flex', gap: '8px' }}>
-              <input type="email" className="inp" style={{ flex: 1 }} placeholder="Enter email address..." value={email} onChange={(e) => setEmail(e.target.value)} required />
-              <button type="submit" className="inp" style={{ background: 'var(--sun, #facc15)', color: '#1e293b', fontWeight: '700', cursor: 'pointer' }} disabled={isDisabled}>{btnText}</button>
-            </form>
-            <div style={msgStyle}>{msgText}</div>
-          </div>
-        ) : (
-          <div className="form-box" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', padding: '28px', borderRadius: '14px' }}>
-            <div className="kicker" style={{ color: 'var(--sun, #facc15)' }}>Setup Required</div>
-            <h2 style={{ fontSize: '24px', margin: '0 0 8px 0', fontFamily: 'Space Grotesk' }}>Configure Roof Details</h2>
-            <p style={{ fontSize: '13.5px', color: '#94A3B8', margin: '0 0 20px 0' }}>Share your roof details so we can match you with verified installers near you.</p>
+        <p className="login-eyebrow">Customer access</p>
+        <h1>Sign in to your dashboard</h1>
+        <p className="login-description">
+          Enter your email and we will send you a secure sign-in link.
+        </p>
 
-            <form onSubmit={handleSaveProfile}>
-              <div className="row-item">
-                <label style={{ fontSize: '13px', color: '#CBD5E1' }}>Full Name</label>
-                <input type="text" className="inp" placeholder="e.g. Aarav Sharma" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-              </div>
-              <div className="grid-split">
-                <div className="row-item">
-                  <label style={{ fontSize: '13px', color: '#CBD5E1' }}>Mobile Number</label>
-                  <input type="tel" inputMode="numeric" maxLength={10} className="inp" placeholder="10-digit mobile" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} required />
-                </div>
-                <div className="row-item">
-                  <label style={{ fontSize: '13px', color: '#CBD5E1' }}>Area Pincode</label>
-                  <input type="text" inputMode="numeric" maxLength={6} className="inp" placeholder="6 digits" value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))} required />
-                </div>
-              </div>
-              <div className="grid-split">
-                <div className="row-item">
-                  <label style={{ fontSize: '13px', color: '#CBD5E1' }}>Usable Roof Space (sq.ft)</label>
-                  <input type="number" min="1" className="inp" placeholder="e.g. 500" value={roofArea} onChange={(e) => setRoofArea(e.target.value)} required />
-                </div>
-                <div className="row-item">
-                  <label style={{ fontSize: '13px', color: '#CBD5E1' }}>Avg Monthly Bill (₹)</label>
-                  <input type="number" min="1" className="inp" placeholder="e.g. 4500" value={monthlyBill} onChange={(e) => setMonthlyBill(e.target.value)} required />
-                </div>
-              </div>
-              <div className="row-item">
-                <label style={{ fontSize: '13px', color: '#CBD5E1' }}>Roof Type</label>
-                <select className="inp" style={{ background: '#2e3a4e' }} value={roofType} onChange={(e) => setRoofType(e.target.value)}>
-                  <option value="Concrete Flat Roof">Concrete Flat Roof</option>
-                  <option value="Metal Tin Shade">Metal Tin Shade</option>
-                  <option value="Slanted Clay Tile">Slanted Clay Tile</option>
-                </select>
-              </div>
-              <button type="submit" className="s-btn" disabled={saving}>{saving ? 'Saving...' : 'Continue to Dashboard →'}</button>
-            </form>
-          </div>
-        )}
-      </div>
-    </>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <label htmlFor="email">Email address</label>
+
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={submitting}
+            required
+          />
+
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Sending link…' : 'Email me a sign-in link'}
+          </button>
+        </form>
+
+        {status ? (
+          <p className="login-success" role="status">
+            {status}
+          </p>
+        ) : null}
+
+        {error ? (
+          <p className="login-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <p className="login-footnote">
+          By continuing, you agree to the SolarHues terms and privacy policy.
+        </p>
+      </section>
+    </main>
   );
 }
