@@ -37,7 +37,7 @@ export default function Home() {
         <nav className="links">
           <Link href="/calculator">Calculator</Link>
           <Link href="/products">Products</Link>
-          <Link href="/vendor-login" className="hide-sm">For installers</Link>
+          <Link href="/vendor-apply">For Installers</Link>
           <Link href="/login" className="cta">Customer login →</Link>
         </nav>
       </header>
