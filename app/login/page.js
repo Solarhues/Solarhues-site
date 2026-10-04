@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../providers';
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -19,7 +18,7 @@ export default function LoginPage() {
   useEffect(() => {
     let active = true;
 
-    async function finishImplicitLogin() {
+    async function finishMagicLinkLogin() {
       const hash = window.location.hash;
 
       if (!hash || !hash.includes('access_token=')) {
@@ -29,13 +28,13 @@ export default function LoginPage() {
         return;
       }
 
-      const hashParams = new URLSearchParams(hash.substring(1));
+      const hashParams = new URLSearchParams(hash.slice(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
 
       if (!accessToken || !refreshToken) {
         if (active) {
-          setError('The sign-in link is incomplete. Please request a new one.');
+          setError('This sign-in link is incomplete. Please request a new link.');
           setFinishingLogin(false);
         }
         return;
@@ -52,25 +51,21 @@ export default function LoginPage() {
         if (active) {
           setError(
             sessionError.message ||
-              'This sign-in link is invalid or has expired. Please request a new one.'
+              'This sign-in link is invalid or expired. Please request a new link.'
           );
           setFinishingLogin(false);
         }
         return;
       }
 
-      window.history.replaceState(
-        {},
-        document.title,
-        `${window.location.pathname}${window.location.search}`
-      );
+      window.history.replaceState({}, document.title, '/login');
 
       if (active) {
         router.replace('/dashboard');
       }
     }
 
-    finishImplicitLogin();
+    finishMagicLinkLogin();
 
     return () => {
       active = false;
@@ -82,14 +77,6 @@ export default function LoginPage() {
       router.replace('/dashboard');
     }
   }, [user, authLoading, router]);
-
-  useEffect(() => {
-    const authError = searchParams.get('error');
-
-    if (authError && authError !== 'missing_code') {
-      setError(authError);
-    }
-  }, [searchParams]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -114,13 +101,13 @@ export default function LoginPage() {
 
     if (signInError) {
       console.error('Magic link request failed:', signInError);
-      setError(signInError.message || 'Could not send the magic link.');
+      setError(signInError.message || 'Could not send the sign-in link.');
       setSubmitting(false);
       return;
     }
 
     setStatus(
-      'Check your inbox for a new SolarHues sign-in link. Open the newest email to continue.'
+      'Check your inbox for a SolarHues sign-in link. Please open the newest email.'
     );
     setSubmitting(false);
   }
