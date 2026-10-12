@@ -5,60 +5,74 @@ import Link from 'next/link';
 const styles = {
   page: {
     minHeight: '100vh',
-    padding: '24px',
+    width: '100%',
+    overflowX: 'hidden',
     color: '#f8fafc',
     background:
-      'radial-gradient(circle at top left, rgba(250, 204, 21, 0.14), transparent 34%), radial-gradient(circle at bottom right, rgba(5, 150, 105, 0.22), transparent 38%), #1e293b',
-    fontFamily: 'Inter, Arial, sans-serif',
+      'radial-gradient(circle at top left, rgba(250, 204, 21, 0.18), transparent 35%), radial-gradient(circle at bottom right, rgba(5, 150, 105, 0.2), transparent 42%), #1e293b',
+    fontFamily: 'Arial, sans-serif',
   },
   container: {
-    width: 'min(1120px, 100%)',
+    width: 'min(1120px, calc(100% - 32px))',
+    minWidth: 0,
     margin: '0 auto',
   },
   nav: {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '16px',
-    paddingBottom: '42px',
+    gap: '14px',
+    padding: '22px 0 38px',
   },
   brand: {
     color: '#facc15',
-    fontFamily: '"Space Grotesk", Arial, sans-serif',
     fontSize: '1.2rem',
     fontWeight: 800,
     textDecoration: 'none',
   },
-  loginLink: {
-    padding: '10px 15px',
-    border: '1px solid rgba(250, 204, 21, 0.65)',
+  navLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '42px',
+    padding: '9px 15px',
+    border: '1px solid rgba(250, 204, 21, 0.7)',
     borderRadius: '999px',
     color: '#facc15',
     fontSize: '0.9rem',
     fontWeight: 700,
+    textAlign: 'center',
     textDecoration: 'none',
   },
   hero: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1.25fr) minmax(280px, 0.75fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    alignItems: 'start',
     gap: '28px',
-    alignItems: 'stretch',
-    padding: '28px 0 52px',
+    padding: '26px 0 56px',
+  },
+  heroCopy: {
+    minWidth: 0,
+    padding: '20px 0',
   },
   eyebrow: {
     margin: '0 0 12px',
     color: '#facc15',
-    fontSize: '0.76rem',
+    fontSize: '0.78rem',
     fontWeight: 800,
     letterSpacing: '0.14em',
     textTransform: 'uppercase',
   },
   title: {
-    maxWidth: '720px',
+    maxWidth: '700px',
     margin: 0,
-    fontFamily: '"Space Grotesk", Arial, sans-serif',
-    fontSize: 'clamp(2.3rem, 6vw, 4.5rem)',
+    color: '#f8fafc',
+    fontSize: 'clamp(2.6rem, 6vw, 4.8rem)',
+    fontWeight: 800,
+    letterSpacing: '-0.05em',
     lineHeight: 1.03,
+    overflowWrap: 'break-word',
   },
   description: {
     maxWidth: '650px',
@@ -67,20 +81,25 @@ const styles = {
     fontSize: '1.08rem',
     lineHeight: 1.7,
   },
-  primaryLink: {
-    display: 'inline-block',
-    padding: '14px 20px',
+  button: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '52px',
+    padding: '13px 20px',
     borderRadius: '999px',
     background: '#facc15',
     color: '#422006',
     fontWeight: 800,
+    textAlign: 'center',
     textDecoration: 'none',
   },
   panel: {
+    minWidth: 0,
     padding: '28px',
-    border: '1px solid rgba(148, 163, 184, 0.2)',
+    border: '1px solid rgba(148, 163, 184, 0.22)',
     borderRadius: '24px',
-    background: 'rgba(15, 23, 42, 0.82)',
+    background: 'rgba(15, 23, 42, 0.88)',
     boxShadow: '0 20px 55px rgba(2, 6, 23, 0.25)',
   },
   panelLabel: {
@@ -93,47 +112,48 @@ const styles = {
   },
   list: {
     display: 'grid',
-    gap: '15px',
-    margin: '22px 0',
-    paddingLeft: '20px',
+    gap: '16px',
+    margin: '24px 0',
+    paddingLeft: '22px',
     color: '#e2e8f0',
-    lineHeight: 1.5,
+    lineHeight: 1.55,
   },
   note: {
     margin: 0,
     paddingTop: '18px',
     borderTop: '1px solid rgba(148, 163, 184, 0.18)',
     color: '#94a3b8',
-    fontSize: '0.88rem',
-    lineHeight: 1.5,
+    fontSize: '0.9rem',
+    lineHeight: 1.55,
   },
   steps: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
     gap: '18px',
-    paddingBottom: '48px',
+    paddingBottom: '54px',
   },
   step: {
-    padding: '24px',
-    border: '1px solid rgba(148, 163, 184, 0.16)',
+    minWidth: 0,
+    padding: '26px',
+    border: '1px solid rgba(148, 163, 184, 0.18)',
     borderRadius: '18px',
-    background: 'rgba(15, 23, 42, 0.65)',
+    background: 'rgba(15, 23, 42, 0.72)',
   },
-  number: {
+  stepNumber: {
     color: '#facc15',
-    fontFamily: '"Space Grotesk", Arial, sans-serif',
-    fontSize: '1.5rem',
+    fontSize: '1.55rem',
     fontWeight: 800,
   },
   stepTitle: {
-    margin: '14px 0 9px',
-    fontFamily: '"Space Grotesk", Arial, sans-serif',
-    fontSize: '1.3rem',
+    margin: '15px 0 10px',
+    color: '#f8fafc',
+    fontSize: '1.35rem',
+    fontWeight: 800,
   },
   stepText: {
     margin: 0,
     color: '#cbd5e1',
-    lineHeight: 1.6,
+    lineHeight: 1.65,
   },
 };
 
@@ -146,13 +166,13 @@ export default function VendorApplyPage() {
             SolarHues
           </Link>
 
-          <Link href="/vendor-apply/form" style={styles.loginLink}>
-  Apply as installer
-</Link>
+          <Link href="/vendor-apply/form" style={styles.navLink}>
+            Apply as installer
+          </Link>
         </nav>
 
         <section style={styles.hero}>
-          <div>
+          <div style={styles.heroCopy}>
             <p style={styles.eyebrow}>For solar installers</p>
 
             <h1 style={styles.title}>
@@ -161,13 +181,13 @@ export default function VendorApplyPage() {
 
             <p style={styles.description}>
               Apply to join SolarHues as a verified installer. Manage quote
-              requests, send transparent proposals, and update customers as
-              installation work progresses.
+              requests, send transparent proposals, and keep customers informed
+              as installation work progresses.
             </p>
 
-           <Link href="/vendor-apply/form" style={styles.primaryLink}>
-  Start installer application
-</Link>
+            <Link href="/vendor-apply/form" style={styles.button}>
+              Start installer application
+            </Link>
           </div>
 
           <aside style={styles.panel}>
@@ -188,7 +208,7 @@ export default function VendorApplyPage() {
 
         <section style={styles.steps}>
           <article style={styles.step}>
-            <span style={styles.number}>01</span>
+            <span style={styles.stepNumber}>01</span>
             <h2 style={styles.stepTitle}>Apply</h2>
             <p style={styles.stepText}>
               Share your business profile, service areas, and credentials.
@@ -196,7 +216,7 @@ export default function VendorApplyPage() {
           </article>
 
           <article style={styles.step}>
-            <span style={styles.number}>02</span>
+            <span style={styles.stepNumber}>02</span>
             <h2 style={styles.stepTitle}>Verify</h2>
             <p style={styles.stepText}>
               SolarHues reviews your application and supporting documents.
@@ -204,7 +224,7 @@ export default function VendorApplyPage() {
           </article>
 
           <article style={styles.step}>
-            <span style={styles.number}>03</span>
+            <span style={styles.stepNumber}>03</span>
             <h2 style={styles.stepTitle}>Quote and deliver</h2>
             <p style={styles.stepText}>
               Respond to matched requests and keep customers informed.
