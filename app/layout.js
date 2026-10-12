@@ -4,7 +4,7 @@ import { Providers } from './providers';
 export const metadata = {
   title: 'SolarHues — Marketplace',
   description:
-    "India's solar escrow marketplace. Size your rooftop system and compare verified installers.",
+    "India's rooftop solar marketplace. Size your rooftop system and compare installers.",
 };
 
 export const viewport = {
@@ -17,7 +17,6 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <Providers>{children}</Providers>
-    import { Analytics } from '@vercel/analytics/next';
       </body>
     </html>
   );
