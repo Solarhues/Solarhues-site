@@ -391,6 +391,481 @@ textarea {
     padding: 9px 13px;
     font-size: 0.84rem;
   }
+  /* =========================================================
+   SolarHues responsive homepage
+   ========================================================= */
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.sh-home {
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: #1e293b;
+  color: #f8fafc;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.sh-header {
+  width: 100%;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(30, 41, 59, 0.96);
+}
+
+.sh-nav {
+  width: min(1180px, calc(100% - 32px));
+  min-width: 0;
+  margin: 0 auto;
+  padding: 18px 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.sh-brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  color: #facc15;
+  font-family: "Space Grotesk", Inter, Arial, sans-serif;
+  font-size: 1.22rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sh-brand-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sh-brand-dots i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #facc15;
+}
+
+.sh-brand-dots i:nth-child(2) {
+  background: #84cc16;
+}
+
+.sh-brand-dots i:nth-child(3) {
+  background: #059669;
+}
+
+.sh-nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.sh-nav-links a,
+.sh-login-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 15px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  border-radius: 999px;
+  color: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sh-nav-links a:hover {
+  border-color: #facc15;
+  color: #facc15;
+}
+
+.sh-login-link {
+  flex: 0 0 auto;
+  border-color: #facc15;
+  color: #facc15;
+}
+
+.sh-login-link:hover {
+  background: #facc15;
+  color: #422006;
+}
+
+.sh-hero {
+  width: 100%;
+  padding: clamp(72px, 10vw, 140px) 16px clamp(78px, 11vw, 150px);
+  background:
+    radial-gradient(circle at 82% 8%, rgba(5, 150, 105, 0.2), transparent 27%),
+    radial-gradient(circle at 10% 0%, rgba(250, 204, 21, 0.1), transparent 23%),
+    #1e293b;
+}
+
+.sh-hero-inner,
+.sh-section-wrap,
+.sh-footer-inner {
+  width: min(840px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.sh-eyebrow {
+  margin: 0 0 18px;
+  color: #6ee7b7;
+  font-size: clamp(0.72rem, 2vw, 0.9rem);
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.sh-hero h1 {
+  max-width: 760px;
+  margin: 0 auto;
+  color: #f8fafc;
+  font-family: "Space Grotesk", Inter, Arial, sans-serif;
+  font-size: clamp(2.8rem, 8.2vw, 6.4rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.sh-hero h1 span {
+  background: linear-gradient(90deg, #facc15 0%, #a3e635 45%, #34d399 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sh-hero-copy {
+  max-width: 700px;
+  margin: 28px auto 38px;
+  color: #cbd5e1;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  line-height: 1.65;
+}
+
+.sh-pin-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(680px, 100%);
+  gap: 12px;
+  margin: 0 auto;
+}
+
+.sh-pin-form input {
+  width: 100%;
+  min-width: 0;
+  height: 62px;
+  padding: 0 20px;
+  border: 1px solid rgba(148, 163, 184, 0.62);
+  border-radius: 15px;
+  outline: none;
+  background: rgba(51, 65, 85, 0.72);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 1.02rem;
+}
+
+.sh-pin-form input::placeholder {
+  color: #94a3b8;
+}
+
+.sh-pin-form input:focus {
+  border-color: #facc15;
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.16);
+}
+
+.sh-pin-form button {
+  min-height: 62px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 15px;
+  background: #facc15;
+  color: #422006;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sh-pin-form button:hover {
+  background: #fde047;
+}
+
+.sh-form-error {
+  margin: 12px 0 0;
+  color: #fecaca;
+  font-size: 0.9rem;
+}
+
+.sh-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 28px;
+  margin: 34px 0 0;
+  padding: 0;
+  color: #cbd5e1;
+  font-size: 0.96rem;
+  font-weight: 650;
+  list-style: none;
+}
+
+.sh-benefits li {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.sh-dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.sh-dot.green {
+  background: #10b981;
+}
+
+.sh-dot.yellow {
+  background: #facc15;
+}
+
+.sh-dot.blue {
+  background: #38bdf8;
+}
+
+.sh-how {
+  width: 100%;
+  padding: clamp(68px, 10vw, 120px) 16px;
+  background: #1e293b;
+}
+
+.sh-how h2 {
+  margin: 0;
+  color: #f8fafc;
+  font-family: "Space Grotesk", Inter, Arial, sans-serif;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.sh-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 42px;
+  text-align: left;
+}
+
+.sh-step {
+  min-width: 0;
+  padding: clamp(22px, 3vw, 30px);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  background: rgba(51, 65, 85, 0.5);
+}
+
+.sh-step-number {
+  color: #10b981;
+  font-family: "Space Grotesk", Inter, Arial, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.sh-step h3 {
+  margin: 18px 0 12px;
+  color: #f8fafc;
+  font-family: "Space Grotesk", Inter, Arial, sans-serif;
+  font-size: 1.42rem;
+  line-height: 1.15;
+}
+
+.sh-step p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.sh-footer {
+  width: 100%;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  background: #172033;
+}
+
+.sh-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(1180px, calc(100% - 32px));
+  padding: 26px 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.sh-footer-inner p {
+  margin: 0;
+}
+
+.sh-footer-inner div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.sh-footer-inner a {
+  color: #cbd5e1;
+  text-decoration: none;
+}
+
+.sh-footer-inner a:hover {
+  color: #facc15;
+}
+
+/* Tablet and mobile */
+@media (max-width: 820px) {
+  .sh-nav {
+    flex-wrap: wrap;
+  }
+
+  .sh-nav-links {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .sh-nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sh-footer-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 620px) {
+  .sh-nav {
+    width: min(100% - 24px, 1180px);
+    gap: 12px;
+    padding: 13px 0;
+  }
+
+  .sh-brand {
+    gap: 7px;
+    font-size: 1.05rem;
+  }
+
+  .sh-brand-dots i {
+    width: 10px;
+    height: 10px;
+  }
+
+  .sh-login-link {
+    min-height: 38px;
+    padding: 8px 11px;
+    font-size: 0.78rem;
+  }
+
+  .sh-nav-links {
+    gap: 8px;
+  }
+
+  .sh-nav-links a {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+  }
+
+  .sh-hero {
+    padding: 72px 16px 84px;
+  }
+
+  .sh-hero h1 {
+    font-size: clamp(2.7rem, 13vw, 4.25rem);
+    letter-spacing: -0.06em;
+  }
+
+  .sh-hero-copy {
+    margin: 22px auto 28px;
+    font-size: 1.02rem;
+  }
+
+  .sh-pin-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .sh-pin-form input,
+  .sh-pin-form button {
+    height: 58px;
+    min-height: 58px;
+  }
+
+  .sh-pin-form button {
+    width: 100%;
+  }
+
+  .sh-benefits {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    width: fit-content;
+    margin: 28px auto 0;
+    text-align: left;
+  }
+
+  .sh-how {
+    padding: 72px 16px;
+  }
+
+  .sh-steps {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 30px;
+  }
+
+  .sh-step {
+    padding: 23px;
+  }
+
+  .sh-footer-inner {
+    width: min(100% - 32px, 1180px);
+    padding: 24px 0;
+  }
 }
 }
 }
