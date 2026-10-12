@@ -17,6 +17,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <Providers>{children}</Providers>
+    import { Analytics } from '@vercel/analytics/next';
       </body>
     </html>
   );
