@@ -1,33 +1,16 @@
-:root {
-  color-scheme: dark;
-  --sh-bg: #1e293b;
-  --sh-panel: #0f172a;
-  --sh-panel-soft: #334155;
-  --sh-text: #f8fafc;
-  --sh-muted: #cbd5e1;
-  --sh-subtle: #94a3b8;
-  --sh-yellow: #facc15;
-  --sh-green: #059669;
-  --sh-mint: #6ee7b7;
-  --sh-red: #fecaca;
-}
-
 * {
   box-sizing: border-box;
 }
 
 html,
 body {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  min-height: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
-  background: var(--sh-bg);
-  color: var(--sh-text);
-  font-family: Inter, Arial, sans-serif;
+  min-width: 0;
+  min-height: 100%;
+  background: #1e293b;
+  color: #f8fafc;
+  font-family: Arial, sans-serif;
 }
 
 body {
@@ -45,15 +28,9 @@ textarea {
   font: inherit;
 }
 
-button {
-  cursor: pointer;
-}
-
 img,
 svg,
-video,
-canvas {
-  display: block;
+video {
   max-width: 100%;
   height: auto;
 }
@@ -69,115 +46,3 @@ canvas {
   white-space: nowrap;
   border: 0;
 }
-
-/* SolarHues home page */
-
-.sh-home {
-  min-height: 100vh;
-  width: 100%;
-  overflow: hidden;
-  background: var(--sh-bg);
-  color: var(--sh-text);
-}
-
-.sh-header {
-  width: 100%;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(30, 41, 59, 0.96);
-}
-
-.sh-nav {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  width: min(1180px, calc(100% - 32px));
-  min-width: 0;
-  margin: 0 auto;
-  padding: 18px 0;
-}
-
-.sh-brand {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 10px;
-  color: var(--sh-yellow);
-  font-family: "Space Grotesk", Inter, Arial, sans-serif;
-  font-size: 1.22rem;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.sh-brand-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.sh-brand-dots i {
-  display: block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--sh-yellow);
-}
-
-.sh-brand-dots i:nth-child(2) {
-  background: #84cc16;
-}
-
-.sh-brand-dots i:nth-child(3) {
-  background: var(--sh-green);
-}
-
-.sh-nav-links {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-width: 0;
-  margin-left: auto;
-}
-
-.sh-nav-links a,
-.sh-login-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 9px 15px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  border-radius: 999px;
-  color: var(--sh-text);
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.1;
-  text-align: center;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.sh-nav-links a:hover {
-  border-color: var(--sh-yellow);
-  color: var(--sh-yellow);
-}
-
-.sh-login-link {
-  flex: 0 0 auto;
-  border-color: var(--sh-yellow);
-  color: var(--sh-yellow);
-}
-
-.sh-login-link:hover {
-  background: var(--sh-yellow);
-  color: #422006;
-}
-
-.sh-hero {
-  width: 100%;
-  padding: clamp(72px, 10vw, 140px) 16px clamp(78px, 11vw, 150px);
-  background:
-    radial-gradient(circle at 82% 8%, rgba(5, 150, 105, 0.2), transparent 27%),
-    radial-gradient(circle at 10% 0%, rgba(250, 204, 21, 0.1), transparent 23%),
-    var(--sh-bg);
