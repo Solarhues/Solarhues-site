@@ -126,9 +126,9 @@ export default function LoginPage() {
   return (
     <main className="login-page">
       <section className="login-card">
-        <a className="login-brand" href="/">
-          SolarHues
-        </a>
+        <div style={{ marginBottom: '24px' }}>
+  <Logo />
+</div>
 
         <p className="login-eyebrow">Customer access</p>
         <h1>Sign in to your dashboard</h1>
