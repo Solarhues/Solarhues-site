@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Logo from '../components/Logo';
 
 export default function HomePage() {
   const router = useRouter();
