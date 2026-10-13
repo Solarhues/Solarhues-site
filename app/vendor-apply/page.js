@@ -163,9 +163,7 @@ export default function VendorApplyPage() {
     <main style={styles.page}>
       <div style={styles.container}>
         <nav style={styles.nav}>
-          <Link href="/" style={styles.brand}>
-            SolarHues
-          </Link>
+          <Logo />
 
           <Link href="/vendor-apply/form" style={styles.navLink}>
             Apply as installer
