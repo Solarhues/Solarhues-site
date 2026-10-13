@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Logo from '../../../components/Logo';
 
 const MAX_PINCODES = 10;
 
@@ -198,18 +199,7 @@ export default function VendorApplicationPage() {
             marginBottom: '34px',
           }}
         >
-          <Link
-            href="/"
-            style={{
-              color: '#facc15',
-              fontFamily: '"Space Grotesk", Arial, sans-serif',
-              fontSize: '1.2rem',
-              fontWeight: 800,
-              textDecoration: 'none',
-            }}
-          >
-            SolarHues
-          </Link>
+         <Logo />
 
           <Link
             href="/vendor-apply"
