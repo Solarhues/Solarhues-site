@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Logo from "../../components/Logo";
 
 const PRODUCTS = [
   { asin: "B07HMLQNJ3", title: "Bright Emergency Solar Lantern with Mobile Charging", category: "Lanterns", description: "Portable lantern with adjustable brightness and mobile charging, useful during power cuts." },
@@ -24,6 +25,11 @@ const PRODUCTS = [
   { asin: "B09HQZ7G85", title: "Philips Flexishine Flexible Decoration Lights", category: "Festive", description: "Flexible Philips decoration lights for festivals and events." }
 ];
 
+// Paste image URLs from Amazon SiteStripe (Get Link -> Image), keyed by ASIN.
+// Example: B07HMLQNJ3: "https://...image-url-from-sitestripe...",
+const IMAGES = {};
+
+const CATEGORY_ICONS = { Lanterns: "🔦", Garden: "🌿", Festive: "✨" };
 const CATEGORIES = ["All", "Lanterns", "Garden", "Festive"];
 const amazonUrl = (asin) => `https://www.amazon.in/dp/${asin}?tag=solarhues-21`;
 
@@ -34,7 +40,7 @@ export default function ProductsPage() {
   return (
     <main className="products-page">
       <header className="products-header">
-        <Link href="/" className="brand">SolarHues</Link>
+        <Logo height={34} />
         <nav className="navigation">
           <Link href="/calculator">Calculator</Link>
           <Link href="/login">Customer login</Link>
@@ -42,22 +48,21 @@ export default function ProductsPage() {
       </header>
 
       <section className="intro">
-        <p className="eyebrow">SolarHues products</p>
+        <p className="eyebrow">Products</p>
         <h1>Solar lights and home essentials</h1>
         <p>A selection of solar lanterns, garden lights and festive lighting available on Amazon India.</p>
       </section>
 
-      <p className="disclosure"><strong>Affiliate disclosure:</strong> Links go to Amazon.in. As an Amazon Associate, SolarHues may earn a commission from qualifying purchases at no extra cost to you. Prices and availability are shown on Amazon.</p>
+      <p className="disclosure"><strong>Affiliate disclosure:</strong> As an Amazon Associate I earn from qualifying purchases. Links go to Amazon.in and cost you nothing extra. Prices and availability are shown on Amazon.</p>
 
-      <div className="filters" role="tablist" aria-label="Product categories">
+      <div className="filters" role="group" aria-label="Product categories">
         {CATEGORIES.map((item) => {
           const count = item === "All" ? PRODUCTS.length : PRODUCTS.filter((product) => product.category === item).length;
           return (
             <button
               key={item}
               type="button"
-              role="tab"
-              aria-selected={category === item}
+              aria-pressed={category === item}
               className={category === item ? "active" : ""}
               onClick={() => setCategory(item)}
             >
@@ -70,6 +75,19 @@ export default function ProductsPage() {
       <section className="grid" aria-label="Products">
         {visibleProducts.map((product) => (
           <article className="card" key={product.asin}>
+            <a
+              className="image-box"
+              href={amazonUrl(product.asin)}
+              target="_blank"
+              rel="sponsored noopener noreferrer"
+              aria-label={`View ${product.title} on Amazon`}
+            >
+              {IMAGES[product.asin] ? (
+                <img src={IMAGES[product.asin]} alt={product.title} loading="lazy" />
+              ) : (
+                <span className="placeholder" aria-hidden="true">{CATEGORY_ICONS[product.category]}</span>
+              )}
+            </a>
             <span className="category">{product.category}</span>
             <h2>{product.title}</h2>
             <p>{product.description}</p>
@@ -85,11 +103,10 @@ export default function ProductsPage() {
 
       <style jsx>{`
         .products-page { min-height: 100vh; padding: 24px 20px 56px; background: #1e293b; color: #f8fafc; font-family: Inter, sans-serif; }
-        .products-header { max-width: 1100px; margin: 0 auto 58px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
-        .brand { color: #fff; font: 700 1.2rem "Space Grotesk", sans-serif; text-decoration: none; }
+        .products-header { max-width: 1100px; margin: 0 auto 58px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
         .navigation { display: flex; gap: 18px; }
-        .navigation a, .footer a { color: #cbd5e1; text-decoration: none; }
-        .navigation a:hover, .footer a:hover { color: #facc15; }
+        .navigation :global(a), .footer :global(a) { color: #cbd5e1; text-decoration: none; }
+        .navigation :global(a:hover), .footer :global(a:hover) { color: #facc15; }
         .intro { max-width: 760px; margin: 0 auto 24px; text-align: center; }
         .eyebrow { margin: 0 0 12px; color: #6ee7b7; font-size: .78rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
         h1 { margin: 0; font: 700 clamp(2rem, 5vw, 3.2rem)/1.05 "Space Grotesk", sans-serif; letter-spacing: -.04em; }
@@ -103,6 +120,9 @@ export default function ProductsPage() {
         .grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
         .card { display: flex; flex-direction: column; padding: 22px; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; background: rgba(255,255,255,.03); }
         .card:hover { border-color: rgba(5,150,105,.7); }
+        .image-box { display: flex; align-items: center; justify-content: center; height: 190px; margin-bottom: 16px; border-radius: 12px; background: #fff; overflow: hidden; text-decoration: none; }
+        .image-box img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+        .placeholder { font-size: 3rem; }
         .category { align-self: flex-start; margin-bottom: 12px; padding: 3px 10px; border-radius: 999px; background: rgba(5,150,105,.18); color: #6ee7b7; font-size: .7rem; }
         h2 { margin: 0 0 9px; font: 600 1.05rem/1.3 "Space Grotesk", sans-serif; }
         .card p { flex: 1; margin: 0 0 18px; color: #94a3b8; font-size: .86rem; line-height: 1.55; }
