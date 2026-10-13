@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../providers';
+import Logo from '../../components/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
