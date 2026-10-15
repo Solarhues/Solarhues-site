@@ -233,10 +233,24 @@ export default function InstallerCrmPage() {
               </p>
             </section>
 
-            <section
-              className="crm-grid"
-              aria-label="CRM modules"
-            >
+            <p style={{ marginTop: 24 }}>
+  <Link
+    href={`/vendor/crm/${workspace.id}/new`}
+    style={{
+      display: 'inline-block',
+      padding: '12px 18px',
+      borderRadius: 10,
+      background: '#facc15',
+      color: '#1e293b',
+      fontWeight: 700,
+      textDecoration: 'none',
+    }}
+  >
+    + Add lead
+  </Link>
+</p>
+
+<section className="crm-grid" aria-label="CRM modules">
               {[
                 [
                   'Leads and customers',
