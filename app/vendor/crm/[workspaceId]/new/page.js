@@ -7,50 +7,52 @@ import { supabase } from '../../../../../lib/supabase';
 import { useAuth } from '../../../../providers';
 import Logo from '../../../../../components/Logo';
 
-const STAGES = [
-  ['new', 'New'],
-  ['contacted', 'Contacted'],
-  ['site_visit', 'Site visit'],
-  ['proposal_sent', 'Proposal sent'],
-  ['won', 'Won'],
-  ['lost', 'Lost'],
+const INITIAL_FORM = {
+  customer_name: '',
+  phone: '',
+  email: '',
+  locality: '',
+  city: '',
+  state: '',
+  pincode: '',
+  building_type: 'Residential',
+  roof_type: '',
+  monthly_bill_inr: '',
+  usable_roof_area_m2: '',
+  tentative_capacity_kwp: '',
+  lead_source: 'installer',
+  next_follow_up_at: '',
+  notes: '',
+};
+
+const CONTACT_FIELDS = [
+  ['customer_name', 'Customer name *', 'text'],
+  ['phone', 'Phone *', 'tel'],
+  ['email', 'Email *', 'email'],
+  ['locality', 'Locality', 'text'],
+  ['city', 'City', 'text'],
+  ['state', 'State', 'text'],
+  ['pincode', 'Pincode', 'text'],
 ];
 
-const PAGE_SIZE = 20;
+const NUMBER_FIELDS = [
+  ['monthly_bill_inr', 'Monthly electricity bill (₹)'],
+  ['usable_roof_area_m2', 'Usable roof area (m²)'],
+  ['tentative_capacity_kwp', 'Tentative system capacity (kWp)'],
+];
 
-function formatDate(value) {
-  if (!value) return '—';
-
-  return new Date(value).toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function stageLabel(value) {
-  return STAGES.find(([key]) => key === value)?.[1] || value;
-}
-
-export default function WorkspaceLeadsPage() {
+export default function AddLeadPage() {
   const { workspaceId } = useParams();
   const { user, loading } = useAuth();
 
   const [workspace, setWorkspace] = useState(null);
-  const [canRead, setCanRead] = useState(false);
+  const [canWrite, setCanWrite] = useState(false);
   const [loadedFor, setLoadedFor] = useState('');
   const [accessError, setAccessError] = useState('');
-
-  const [leads, setLeads] = useState([]);
-  const [leadsLoading, setLeadsLoading] = useState(false);
-  const [leadsError, setLeadsError] = useState('');
-
-  const [search, setSearch] = useState('');
-  const [stage, setStage] = useState('all');
-  const [page, setPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
+  const [form, setForm] = useState({ ...INITIAL_FORM });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [savedId, setSavedId] = useState('');
 
   const loadKey = `${user?.id || ''}:${workspaceId || ''}`;
 
@@ -58,18 +60,19 @@ export default function WorkspaceLeadsPage() {
     let active = true;
 
     setWorkspace(null);
-    setCanRead(false);
+    setCanWrite(false);
     setLoadedFor('');
     setAccessError('');
-    setLeads([]);
-    setTotalCount(0);
-    setPage(0);
+    setSavedId('');
+    setForm({ ...INITIAL_FORM });
 
     if (!user?.id || !workspaceId) {
       return () => {
         active = false;
       };
     }
+
+    const key = `${user.id}:${workspaceId}`;
 
     async function loadAccess() {
       try {
@@ -121,12 +124,12 @@ export default function WorkspaceLeadsPage() {
           );
         }
 
-        const memberCanRead =
+        const memberCanWrite =
           member?.is_active &&
           ['owner', 'sales'].includes(member.member_role);
 
         setWorkspace(company);
-        setCanRead(Boolean(isAdmin || memberCanRead));
+        setCanWrite(Boolean(isAdmin || memberCanWrite));
       } catch (err) {
         if (active) {
           setAccessError(
@@ -134,7 +137,7 @@ export default function WorkspaceLeadsPage() {
           );
         }
       } finally {
-        if (active) setLoadedFor(loadKey);
+        if (active) setLoadedFor(key);
       }
     }
 
@@ -143,110 +146,137 @@ export default function WorkspaceLeadsPage() {
     return () => {
       active = false;
     };
-  }, [user?.id, workspaceId, loadKey]);
+  }, [user?.id, workspaceId]);
 
-  useEffect(() => {
-    let active = true;
-
-    setLeads([]);
-    setLeadsError('');
-    setTotalCount(0);
-
-    if (!user?.id || !workspaceId || !canRead) {
-      return () => {
-        active = false;
-      };
+  function update(field, value) {
+    if (field === 'phone') {
+      value = value.replace(/[^0-9]/g, '').slice(0, 15);
     }
 
-    async function loadLeads() {
-      setLeadsLoading(true);
+    if (field === 'pincode') {
+      value = value.replace(/[^0-9]/g, '').slice(0, 6);
+    }
 
-      try {
-        const trimmedSearch = search.trim();
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
+    setForm((previous) => ({ ...previous, [field]: value }));
+  }
 
-        let query = supabase
-          .from('crm_leads')
-          .select(
-            `
-            id,
-            customer_name,
-            phone,
-            email,
-            city,
-            state,
-            building_type,
-            stage,
-            lead_source,
-            created_at,
-            next_follow_up_at
-          `,
-            { count: 'exact' }
-          )
-          .eq('workspace_id', workspaceId)
-          .order('created_at', { ascending: false })
-          .range(from, to);
+  function validate() {
+    if (!form.customer_name.trim()) {
+      return 'Please enter the customer name.';
+    }
 
-        if (stage !== 'all') {
-          query = query.eq('stage', stage);
-        }
+    if (!/^[0-9]{8,15}$/.test(form.phone)) {
+      return 'Phone must contain only digits, between 8 and 15 digits.';
+    }
 
-        if (trimmedSearch) {
-          const safeSearch = trimmedSearch.replace(/[%,()]/g, '');
+    const email = form.email.trim();
 
-          query = query.or(
-            [
-              `customer_name.ilike.%${safeSearch}%`,
-              `phone.ilike.%${safeSearch}%`,
-              `email.ilike.%${safeSearch}%`,
-            ].join(',')
-          );
-        }
+    if (!email) {
+      return 'Please enter the customer email address.';
+    }
 
-        const { data, count, error: leadsQueryError } =
-          await query;
+    if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
+      return 'Please enter an email in the format test@test.com.';
+    }
 
-        if (leadsQueryError) throw leadsQueryError;
-        if (!active) return;
+    if (
+      form.pincode.trim() &&
+      !/^[1-9][0-9]{5}$/.test(form.pincode.trim())
+    ) {
+      return 'Pincode must be 6 digits and cannot start with zero.';
+    }
 
-        setLeads(data || []);
-        setTotalCount(count || 0);
-      } catch (err) {
-        if (active) {
-          setLeadsError(
-            err.message || 'Could not load leads.'
-          );
-        }
-      } finally {
-        if (active) setLeadsLoading(false);
+    for (const [field, label] of NUMBER_FIELDS) {
+      if (form[field] === '') continue;
+
+      const value = Number(form[field]);
+
+      if (
+        !Number.isFinite(value) ||
+        (field === 'monthly_bill_inr' ? value < 0 : value <= 0)
+      ) {
+        return `Please check: ${label}.`;
       }
     }
 
-    loadLeads();
+    if (
+      form.next_follow_up_at &&
+      Number.isNaN(new Date(form.next_follow_up_at).getTime())
+    ) {
+      return 'Please enter a valid follow-up date and time.';
+    }
 
-    return () => {
-      active = false;
-    };
-  }, [
-    user?.id,
-    workspaceId,
-    canRead,
-    search,
-    stage,
-    page,
-  ]);
+    return '';
+  }
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalCount / PAGE_SIZE)
-  );
+  async function saveLead(event) {
+    event.preventDefault();
+
+    if (saving || savedId) return;
+
+    setError('');
+
+    if (!user || !workspace || !canWrite) {
+      setError('Your account cannot add leads to this workspace.');
+      return;
+    }
+
+    const problem = validate();
+
+    if (problem) {
+      setError(problem);
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const payload = {
+        workspace_id: workspace.id,
+        customer_name: form.customer_name.trim(),
+        phone: form.phone,
+        email: form.email.trim(),
+        locality: form.locality.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim() || null,
+        pincode: form.pincode.trim() || null,
+        building_type: form.building_type,
+        roof_type: form.roof_type || null,
+        stage: 'new',
+        lead_source: form.lead_source,
+        notes: form.notes.trim() || null,
+        next_follow_up_at: form.next_follow_up_at
+          ? new Date(form.next_follow_up_at).toISOString()
+          : null,
+      };
+
+      for (const [field] of NUMBER_FIELDS) {
+        payload[field] =
+          form[field] === '' ? null : Number(form[field]);
+      }
+
+      // The database supplies created_by and timestamps.
+      const { data, error: insertError } = await supabase
+        .from('crm_leads')
+        .insert(payload)
+        .select('id')
+        .single();
+
+      if (insertError) throw insertError;
+
+      setSavedId(data.id);
+    } catch (err) {
+      setError(err.message || 'Could not save the lead.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const waiting =
     loading || Boolean(user && loadedFor !== loadKey);
 
   return (
-    <div className="workspace-page">
+    <div className="lead-page">
       <header>
         <Logo height={34} />
         <Link href="/vendor/crm">← CRM dashboard</Link>
@@ -254,11 +284,9 @@ export default function WorkspaceLeadsPage() {
 
       <main>
         <p className="eyebrow">Installer CRM</p>
-        <h1>Leads</h1>
+        <h1>Add lead</h1>
 
-        {waiting && (
-          <p role="status">Checking workspace access…</p>
-        )}
+        {waiting && <p role="status">Checking workspace access…</p>}
 
         {!loading && !user && (
           <div className="notice">
@@ -267,164 +295,238 @@ export default function WorkspaceLeadsPage() {
         )}
 
         {!waiting && user && accessError && (
-          <div className="error" role="alert">
-            {accessError}
-          </div>
+          <div className="error" role="alert">{accessError}</div>
         )}
 
-        {!waiting && user && workspace && !canRead && (
+        {!waiting && user && workspace && !canWrite && (
           <div className="notice">
             Only workspace owners, sales staff and SolarHues admins
-            can view leads.
+            can add leads.
           </div>
         )}
 
-        {!waiting && user && workspace && canRead && (
+        {!waiting && user && workspace && canWrite && (
           <>
             <p className="subtitle">{workspace.company_name}</p>
 
-            <div className="toolbar">
-              <input
-                type="search"
-                aria-label="Search leads"
-                placeholder="Search name, phone or email"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setPage(0);
-                }}
-              />
+            {savedId ? (
+              <section className="success" role="status">
+                <h2>Lead saved successfully</h2>
+                <p>Sales stage: New</p>
+                <p className="lead-id">Lead ID: {savedId}</p>
 
-              <select
-                aria-label="Filter by stage"
-                value={stage}
-                onChange={(event) => {
-                  setStage(event.target.value);
-                  setPage(0);
-                }}
-              >
-                <option value="all">All stages</option>
-                {STAGES.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-
-              <Link
-                href={`/vendor/crm/${workspaceId}/new`}
-                className="add-link"
-              >
-                + Add lead
-              </Link>
-            </div>
-
-            {leadsError && (
-              <div className="error" role="alert">
-                {leadsError}
-              </div>
-            )}
-
-            {leadsLoading ? (
-              <p role="status">Loading leads…</p>
-            ) : leads.length === 0 ? (
-              <div className="empty">
-                <h2>No leads found</h2>
-                <p>
-                  Try changing the search or stage filter, or add
-                  your first lead.
-                </p>
-              </div>
+                <div className="actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...INITIAL_FORM });
+                      setSavedId('');
+                      setError('');
+                    }}
+                  >
+                    Add another lead
+                  </button>
+                  <Link href="/vendor/crm">Back to dashboard</Link>
+                </div>
+              </section>
             ) : (
-              <>
-                <p className="count">
-                  Showing {leads.length} of {totalCount} lead
-                  {totalCount === 1 ? '' : 's'}
-                </p>
+              <form onSubmit={saveLead} noValidate>
+                {error && (
+                  <div className="error" role="alert">{error}</div>
+                )}
 
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th>Contact</th>
-                        <th>Location</th>
-                        <th>Stage</th>
-                        <th>Created</th>
-                      </tr>
-                    </thead>
+                <fieldset disabled={saving}>
+                  <section>
+                    <h2>Customer and location</h2>
 
-                    <tbody>
-                      {leads.map((lead) => (
-                        <tr key={lead.id}>
-                          <td>
-                            <span className="name">
-                              {lead.customer_name}
-                            </span>
-                            <span className="meta">
-                              {lead.building_type || '—'}
-                            </span>
-                          </td>
+                    <div className="grid">
+                      {CONTACT_FIELDS.map(([field, label, type]) => (
+                        <div className="field" key={field}>
+                          <label htmlFor={`lead-${field}`}>
+                            {label}
+                          </label>
 
-                          <td>
-                            <span>{lead.phone}</span>
-                            <span className="meta">
-                              {lead.email}
-                            </span>
-                          </td>
-
-                          <td>
-                            {[lead.city, lead.state]
-                              .filter(Boolean)
-                              .join(', ') || '—'}
-                          </td>
-
-                          <td>
-                            <span
-                              className={`stage stage-${lead.stage}`}
-                            >
-                              {stageLabel(lead.stage)}
-                            </span>
-                          </td>
-
-                          <td>{formatDate(lead.created_at)}</td>
-                        </tr>
+                          <input
+                            id={`lead-${field}`}
+                            type={type}
+                            value={form[field]}
+                            required={
+                              field === 'customer_name' ||
+                              field === 'phone' ||
+                              field === 'email'
+                            }
+                            maxLength={
+                              field === 'pincode'
+                                ? 6
+                                : field === 'phone'
+                                  ? 15
+                                  : 200
+                            }
+                            inputMode={
+                              field === 'pincode' || field === 'phone'
+                                ? 'numeric'
+                                : field === 'email'
+                                  ? 'email'
+                                  : undefined
+                            }
+                            placeholder={
+                              field === 'email'
+                                ? 'test@test.com'
+                                : undefined
+                            }
+                            onChange={(event) =>
+                              update(field, event.target.value)
+                            }
+                          />
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+                  </section>
 
-                <div className="pagination">
-                  <button
-                    type="button"
-                    disabled={page === 0 || leadsLoading}
-                    onClick={() => setPage(page - 1)}
-                  >
-                    ← Previous
+                  <section>
+                    <h2>Solar requirements</h2>
+
+                    <div className="grid">
+                      <div className="field">
+                        <label htmlFor="lead-building">
+                          Building type
+                        </label>
+                        <select
+                          id="lead-building"
+                          value={form.building_type}
+                          onChange={(event) =>
+                            update('building_type', event.target.value)
+                          }
+                        >
+                          {[
+                            'Residential',
+                            'Commercial',
+                            'Agricultural',
+                            'Society',
+                          ].map((value) => (
+                            <option key={value}>{value}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="field">
+                        <label htmlFor="lead-roof">Roof type</label>
+                        <select
+                          id="lead-roof"
+                          value={form.roof_type}
+                          onChange={(event) =>
+                            update('roof_type', event.target.value)
+                          }
+                        >
+                          <option value="">Not known yet</option>
+                          <option value="RCC">RCC</option>
+                          <option value="Tin shed">Tin shed</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      {NUMBER_FIELDS.map(([field, label]) => (
+                        <div className="field" key={field}>
+                          <label htmlFor={`lead-${field}`}>
+                            {label}
+                          </label>
+                          <input
+                            id={`lead-${field}`}
+                            type="number"
+                            step="any"
+                            min="0"
+                            value={form[field]}
+                            onChange={(event) =>
+                              update(field, event.target.value)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="hint">
+                      Roof area is in square metres, not square feet.
+                      Leave unknown values blank.
+                    </p>
+                  </section>
+
+                  <section>
+                    <h2>Source and follow-up</h2>
+
+                    <div className="grid">
+                      <div className="field">
+                        <label htmlFor="lead-source">Lead source</label>
+                        <select
+                          id="lead-source"
+                          value={form.lead_source}
+                          onChange={(event) =>
+                            update('lead_source', event.target.value)
+                          }
+                        >
+                          {[
+                            ['installer', 'Installer-generated'],
+                            ['referral', 'Referral'],
+                            ['website', 'Website'],
+                            ['campaign', 'Campaign'],
+                            ['other', 'Other'],
+                          ].map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="field">
+                        <label htmlFor="lead-followup">
+                          Next follow-up — your device’s local time
+                        </label>
+                        <input
+                          id="lead-followup"
+                          type="datetime-local"
+                          value={form.next_follow_up_at}
+                          onChange={(event) =>
+                            update(
+                              'next_follow_up_at',
+                              event.target.value
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="field notes">
+                      <label htmlFor="lead-notes">Notes</label>
+                      <textarea
+                        id="lead-notes"
+                        rows={4}
+                        maxLength={10000}
+                        value={form.notes}
+                        onChange={(event) =>
+                          update('notes', event.target.value)
+                        }
+                      />
+                    </div>
+
+                    <p className="hint">
+                      Record only necessary customer information.
+                      Do not put passwords, Aadhaar numbers or bank
+                      credentials in notes.
+                    </p>
+                  </section>
+
+                  <button type="submit">
+                    {saving ? 'Saving…' : 'Save lead'}
                   </button>
-
-                  <span>
-                    Page {page + 1} of {totalPages}
-                  </span>
-
-                  <button
-                    type="button"
-                    disabled={
-                      page + 1 >= totalPages || leadsLoading
-                    }
-                    onClick={() => setPage(page + 1)}
-                  >
-                    Next →
-                  </button>
-                </div>
-              </>
+                </fieldset>
+              </form>
             )}
           </>
         )}
       </main>
 
       <style jsx>{`
-        .workspace-page {
+        .lead-page {
           min-height: 100vh;
           background: #1e293b;
           color: #f8fafc;
@@ -439,30 +541,49 @@ export default function WorkspaceLeadsPage() {
           padding: 14px 24px;
           border-bottom: 1px solid #334155;
         }
-        .workspace-page :global(a) {
+        .lead-page :global(a) {
           color: #facc15;
           text-decoration: none;
         }
         main {
-          max-width: 1100px;
+          max-width: 860px;
           margin: auto;
           padding: 32px 20px 72px;
         }
         h1 { margin: 0 0 8px; }
+        h2 { margin: 0 0 18px; font-size: 19px; }
         .eyebrow {
           color: #6ee7b7;
           text-transform: uppercase;
           letter-spacing: .1em;
           font-size: 12px;
         }
-        .subtitle, .count { color: #94a3b8; }
-        .toolbar {
-          display: grid;
-          grid-template-columns: minmax(220px, 1fr) 190px auto;
-          gap: 12px;
-          margin: 24px 0;
+        .subtitle, .hint { color: #94a3b8; }
+        .hint { font-size: 12px; line-height: 1.6; }
+        section, .notice, .error {
+          margin: 20px 0;
+          padding: 24px;
+          border: 1px solid #475569;
+          border-radius: 14px;
+          background: rgba(255,255,255,.03);
         }
-        input, select {
+        .error { color: #fca5a5; }
+        .success { border-color: #059669; }
+        .lead-id { overflow-wrap: anywhere; }
+        fieldset {
+          border: 0;
+          padding: 0;
+          margin: 0;
+          min-width: 0;
+        }
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+        .field { display: grid; gap: 7px; }
+        label { font-size: 13px; color: #cbd5e1; }
+        input, select, textarea {
           box-sizing: border-box;
           width: 100%;
           min-width: 0;
@@ -473,93 +594,29 @@ export default function WorkspaceLeadsPage() {
           color: #fff;
           font: inherit;
         }
-        .add-link {
-          display: inline-flex;
-          align-items: center;
-          padding: 12px 16px;
+        input:focus, select:focus, textarea:focus {
+          outline: 2px solid #facc15;
+          outline-offset: 2px;
+        }
+        .notes { margin-top: 18px; }
+        button {
+          border: 0;
           border-radius: 9px;
+          padding: 13px 20px;
           background: #facc15;
-          color: #1e293b !important;
+          color: #1e293b;
           font-weight: 700;
-          white-space: nowrap;
-        }
-        .notice, .error, .empty {
-          margin: 20px 0;
-          padding: 24px;
-          border: 1px solid #475569;
-          border-radius: 14px;
-          background: rgba(255,255,255,.03);
-        }
-        .error { color: #fca5a5; }
-        .table-wrap {
-          overflow-x: auto;
-          border: 1px solid #475569;
-          border-radius: 14px;
-          background: rgba(255,255,255,.03);
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 760px;
-        }
-        th, td {
-          padding: 14px;
-          text-align: left;
-          border-bottom: 1px solid #334155;
-          vertical-align: top;
-        }
-        th {
-          color: #94a3b8;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: .08em;
-        }
-        tr:last-child td { border-bottom: 0; }
-        .name {
-          display: block;
-          font-weight: 600;
-        }
-        .meta {
-          display: block;
-          color: #94a3b8;
-          font-size: 12px;
-          margin-top: 3px;
-          overflow-wrap: anywhere;
-        }
-        .stage {
-          display: inline-block;
-          padding: 4px 9px;
-          border-radius: 999px;
-          background: #334155;
-          font-size: 12px;
-        }
-        .stage-won { background: #059669; }
-        .stage-lost { background: #7f1d1d; }
-        .stage-proposal_sent { background: #7c3aed; }
-        .stage-site_visit { background: #0e7490; }
-        .pagination {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          margin-top: 20px;
-        }
-        .pagination button {
-          border: 1px solid #64748b;
-          border-radius: 9px;
-          padding: 10px 16px;
-          background: #0f172a;
-          color: #fff;
           cursor: pointer;
         }
-        .pagination button:disabled {
-          opacity: .5;
-          cursor: not-allowed;
+        button:disabled { opacity: .6; cursor: wait; }
+        .actions {
+          display: flex;
+          gap: 18px;
+          align-items: center;
+          flex-wrap: wrap;
         }
-        @media (max-width: 760px) {
-          .toolbar {
-            grid-template-columns: 1fr;
-          }
+        @media (max-width: 640px) {
+          .grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
