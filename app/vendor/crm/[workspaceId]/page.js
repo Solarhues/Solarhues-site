@@ -311,12 +311,19 @@ export default function WorkspaceLeadsPage() {
                 ))}
               </select>
 
-              <div className="toolbar-links">
+             <div className="toolbar-links">
   <Link
     href={`/vendor/crm/${workspaceId}/follow-ups`}
     className="followups-link"
   >
     Follow-ups
+  </Link>
+
+  <Link
+    href={`/vendor/crm/${workspaceId}/payments`}
+    className="followups-link"
+  >
+    Payments
   </Link>
 
   <Link
