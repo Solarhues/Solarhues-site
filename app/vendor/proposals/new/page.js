@@ -207,7 +207,17 @@ export default function NewProposalPage() {
 
       setMessage(`Draft ${proposalNumber} updated.`);
     }
-
+{draftId && (
+  <p style={{ margin: '0 0 18px' }}>
+    <Link
+      href={`/vendor/proposals/${draftId}/design`}
+      style={{ color: '#facc15', fontWeight: 700, textDecoration: 'none' }}
+    >
+      Continue to system design →
+    </Link>
+  </p>
+)}
+    
     setSaving(false);
   }
 
