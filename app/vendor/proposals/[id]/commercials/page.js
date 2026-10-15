@@ -373,6 +373,14 @@ export default function CommercialsPage() {
               <span className="cm-chip">{sd.dc_capacity_kwp} kWp</span>
               <span className="cm-chip">Status: {draft.status}</span>
             </div>
+<p style={{ margin: '0 0 18px' }}>
+  <Link
+    href={`/vendor/proposals/${proposalId}/preview`}
+    style={{ color: '#facc15', fontWeight: 700, textDecoration: 'none' }}
+  >
+    Next: preview the proposal →
+  </Link>
+</p>
 
             {locked && (
               <div className="cm-note" style={{ marginBottom: 20 }}>
