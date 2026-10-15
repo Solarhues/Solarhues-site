@@ -311,12 +311,21 @@ export default function WorkspaceLeadsPage() {
                 ))}
               </select>
 
-              <Link
-                href={`/vendor/crm/${workspaceId}/new`}
-                className="add-link"
-              >
-                + Add lead
-              </Link>
+              <div className="toolbar-links">
+  <Link
+    href={`/vendor/crm/${workspaceId}/follow-ups`}
+    className="followups-link"
+  >
+    Follow-ups
+  </Link>
+
+  <Link
+    href={`/vendor/crm/${workspaceId}/new`}
+    className="add-link"
+  >
+    + Add lead
+  </Link>
+</div>
             </div>
 
             {leadsError && (
@@ -435,6 +444,22 @@ export default function WorkspaceLeadsPage() {
           background: #1e293b;
           color: #f8fafc;
           font-family: Inter, -apple-system, sans-serif;
+          .toolbar-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.followups-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #64748b;
+  border-radius: 9px;
+  background: #0f172a;
+  color: #fff !important;
+  font-weight: 600;
+  white-space: nowrap;
+}
         }
         header {
           display: flex;
