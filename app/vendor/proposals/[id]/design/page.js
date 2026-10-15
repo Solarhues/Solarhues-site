@@ -286,6 +286,14 @@ export default function SystemDesignPage() {
               <span className="sd-chip">Proposal {draft.proposal_number}</span>
               <span className="sd-chip">Status: {draft.status}</span>
             </div>
+         <p style={{ margin: '0 0 18px' }}>
+  <Link
+    href={`/vendor/proposals/${proposalId}/commercials`}
+    style={{ color: '#facc15', fontWeight: 700, textDecoration: 'none' }}
+  >
+    Next: bill of materials, price and warranties →
+  </Link>
+</p>
 
             {locked && (
               <div className="sd-note" style={{ marginBottom: 20 }}>
