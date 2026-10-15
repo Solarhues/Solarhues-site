@@ -408,37 +408,3 @@ export default function PublicProposalPage() {
     </div>
   );
 }
-3. Add a share button
-In:
-
-text
-app/vendor/crm/[workspaceId]/[leadId]/proposals/[proposalId]/page.js
-find this block:
-
-jsx
-<div className="status-actions">
-Immediately above it, add:
-
-jsx
-{['sent', 'accepted'].includes(proposal.status) && (
-  <Link
-    href={`/proposal/${proposal.id}`}
-    target="_blank"
-    className="share-link"
-  >
-    Open customer link
-  </Link>
-)}
-Then add this CSS inside the existing <style jsx> block:
-
-css
-.share-link {
-  display: inline-block;
-  margin-bottom: 12px;
-  padding: 10px 16px;
-  border: 1px solid #64748b;
-  border-radius: 9px;
-  background: #0f172a;
-  color: #fff !important;
-  font-weight: 600;
-}
