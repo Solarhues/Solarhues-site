@@ -358,9 +358,15 @@ export default function WorkspaceLeadsPage() {
                       {leads.map((lead) => (
                         <tr key={lead.id}>
                           <td>
-                            <span className="name">
-                              {lead.customer_name}
-                            </span>
+                            <Link
+                              href={`/vendor/crm/${workspaceId}/${lead.id}`}
+                              className="customer-link"
+                            >
+                              <span className="name">
+                                {lead.customer_name}
+                              </span>
+                            </Link>
+
                             <span className="meta">
                               {lead.building_type || '—'}
                             </span>
@@ -515,6 +521,10 @@ export default function WorkspaceLeadsPage() {
           letter-spacing: .08em;
         }
         tr:last-child td { border-bottom: 0; }
+        .customer-link {
+          color: #facc15 !important;
+          font-weight: 600;
+        }
         .name {
           display: block;
           font-weight: 600;
