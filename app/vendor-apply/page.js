@@ -162,13 +162,26 @@ export default function VendorApplyPage() {
   return (
     <main style={styles.page}>
       <div style={styles.container}>
-        <nav style={styles.nav}>
-          <Logo />
+       <nav style={styles.nav}>
+  <Logo />
 
-          <Link href="/vendor-apply/form" style={styles.navLink}>
-            Apply as installer
-          </Link>
-        </nav>
+  <div
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: '12px',
+    }}
+  >
+    <Link href="/vendor-login" style={styles.navLink}>
+      Installer login
+    </Link>
+
+    <Link href="/vendor-apply/form" style={styles.navLink}>
+      Apply as installer
+    </Link>
+  </div>
+</nav>
 
         <section style={styles.hero}>
           <div style={styles.heroCopy}>
@@ -184,9 +197,31 @@ export default function VendorApplyPage() {
               as installation work progresses.
             </p>
 
-            <Link href="/vendor-apply/form" style={styles.button}>
-              Start installer application
-            </Link>
+           <Link href="/vendor-apply/form" style={styles.button}>
+  Start installer application
+</Link>
+
+<p
+  style={{
+    margin: '18px 0 0',
+    color: '#cbd5e1',
+    fontSize: '0.95rem',
+    lineHeight: 1.6,
+  }}
+>
+  Already registered?{' '}
+  <Link
+    href="/vendor-login"
+    style={{
+      color: '#facc15',
+      fontWeight: 700,
+      textDecoration: 'underline',
+      textUnderlineOffset: '4px',
+    }}
+  >
+    Sign in to your installer account
+  </Link>
+</p>
           </div>
 
           <aside style={styles.panel}>
