@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '../../../../../../lib/supabase';
-import { useAuth } from '../../../../../providers';
-import Logo from '../../../../../../components/Logo';
+import { supabase } from '../../../../../../../lib/supabase';
+import { useAuth } from '../../../../../../providers';
+import Logo from '../../../../../../../components/Logo';
 
 const EMPTY_ITEM = {
   item_type: 'panel',
