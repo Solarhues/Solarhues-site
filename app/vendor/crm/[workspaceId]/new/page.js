@@ -149,16 +149,16 @@ export default function AddLeadPage() {
   }, [user?.id, workspaceId]);
 
   function update(field, value) {
-  if (field === 'phone') {
-    value = value.replace(/[^0-9]/g, '').slice(0, 15);
-  }
+    if (field === 'phone') {
+      value = value.replace(/[^0-9]/g, '').slice(0, 15);
+    }
 
-  if (field === 'pincode') {
-    value = value.replace(/[^0-9]/g, '').slice(0, 6);
-  }
+    if (field === 'pincode') {
+      value = value.replace(/[^0-9]/g, '').slice(0, 6);
+    }
 
-  setForm((previous) => ({ ...previous, [field]: value }));
-}
+    setForm((previous) => ({ ...previous, [field]: value }));
+  }
 
   function validate() {
     if (!form.customer_name.trim()) {
@@ -166,32 +166,17 @@ export default function AddLeadPage() {
     }
 
     if (!/^[0-9]{8,15}$/.test(form.phone)) {
-  return 'Phone must contain only digits, between 8 and 15 digits.';
-}
-
-const email = form.email.trim();
-
-if (!email) {
-  return 'Please enter the customer email address.';
-}
-
-if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
-  return 'Please enter an email in the format test@test.com.';
-}
-
-    if (
-      !/^[+\d\s().-]+$/.test(form.phone.trim()) ||
-      phoneDigits.length < 8 ||
-      phoneDigits.length > 15
-    ) {
-      return 'Please enter a valid phone number.';
+      return 'Phone must contain only digits, between 8 and 15 digits.';
     }
 
-    if (
-      form.email.trim() &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
-    ) {
-      return 'Please enter a valid email address.';
+    const email = form.email.trim();
+
+    if (!email) {
+      return 'Please enter the customer email address.';
+    }
+
+    if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
+      return 'Please enter an email in the format test@test.com.';
     }
 
     if (
@@ -249,8 +234,8 @@ if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
       const payload = {
         workspace_id: workspace.id,
         customer_name: form.customer_name.trim(),
-        phone: form.phone.trim(),
-        email: form.email.trim() || null,
+        phone: form.phone,
+        email: form.email.trim(),
         locality: form.locality.trim() || null,
         city: form.city.trim() || null,
         state: form.state.trim() || null,
@@ -353,37 +338,46 @@ if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
                 <fieldset disabled={saving}>
                   <section>
                     <h2>Customer and location</h2>
+
                     <div className="grid">
-                     <input
-  id={`lead-${field}`}
-  type={type}
-  value={form[field]}
-  required={
-    field === 'customer_name' ||
-    field === 'phone' ||
-    field === 'email'
-  }
-  maxLength={
-    field === 'pincode'
-      ? 6
-      : field === 'phone'
-        ? 15
-        : 200
-  }
-  inputMode={
-    field === 'pincode' || field === 'phone'
-      ? 'numeric'
-      : field === 'email'
-        ? 'email'
-        : undefined
-  }
-  placeholder={
-    field === 'email'
-      ? 'test@test.com'
-      : undefined
-  }
-  onChange={(event) => update(field, event.target.value)}
-/>
+                      {CONTACT_FIELDS.map(([field, label, type]) => (
+                        <div className="field" key={field}>
+                          <label htmlFor={`lead-${field}`}>
+                            {label}
+                          </label>
+
+                          <input
+                            id={`lead-${field}`}
+                            type={type}
+                            value={form[field]}
+                            required={
+                              field === 'customer_name' ||
+                              field === 'phone' ||
+                              field === 'email'
+                            }
+                            maxLength={
+                              field === 'pincode'
+                                ? 6
+                                : field === 'phone'
+                                  ? 15
+                                  : 200
+                            }
+                            inputMode={
+                              field === 'pincode' || field === 'phone'
+                                ? 'numeric'
+                                : field === 'email'
+                                  ? 'email'
+                                  : undefined
+                            }
+                            placeholder={
+                              field === 'email'
+                                ? 'test@test.com'
+                                : undefined
+                            }
+                            onChange={(event) =>
+                              update(field, event.target.value)
+                            }
+                          />
                         </div>
                       ))}
                     </div>
@@ -391,6 +385,7 @@ if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
 
                   <section>
                     <h2>Solar requirements</h2>
+
                     <div className="grid">
                       <div className="field">
                         <label htmlFor="lead-building">
@@ -448,6 +443,7 @@ if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
                         </div>
                       ))}
                     </div>
+
                     <p className="hint">
                       Roof area is in square metres, not square feet.
                       Leave unknown values blank.
@@ -456,6 +452,7 @@ if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
 
                   <section>
                     <h2>Source and follow-up</h2>
+
                     <div className="grid">
                       <div className="field">
                         <label htmlFor="lead-source">Lead source</label>
