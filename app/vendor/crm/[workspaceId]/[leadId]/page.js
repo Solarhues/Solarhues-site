@@ -741,6 +741,15 @@ export default function LeadDetailsPage() {
                     </div>
                   </section>
 
+                          <section>
+  <h2>Proposal</h2>
+  <Link
+    href={`/vendor/crm/${workspaceId}/${leadId}/proposals/new`}
+    className="proposal-link"
+  >
+    + Create proposal
+  </Link>
+</section>
                   <section className="meta-section">
                     <h2>Record details</h2>
                     <p>Created: {formatDate(lead.created_at)}</p>
@@ -766,6 +775,14 @@ export default function LeadDetailsPage() {
           background: #1e293b;
           color: #f8fafc;
           font-family: Inter, -apple-system, sans-serif;
+          .proposal-link {
+  display: inline-flex;
+  padding: 12px 16px;
+  border-radius: 9px;
+  background: #facc15;
+  color: #1e293b !important;
+  font-weight: 700;
+}
         }
         header {
           display: flex;
