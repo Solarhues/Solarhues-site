@@ -750,6 +750,15 @@ export default function LeadDetailsPage() {
     + Create proposal
   </Link>
 </section>
+      <section>
+  <h2>Payments</h2>
+  <Link
+    href={`/vendor/crm/${workspaceId}/${leadId}/payments/new`}
+    className="payment-link"
+  >
+    + Create payment request
+  </Link>
+</section>
                   <section className="meta-section">
                     <h2>Record details</h2>
                     <p>Created: {formatDate(lead.created_at)}</p>
@@ -770,6 +779,14 @@ export default function LeadDetailsPage() {
       </main>
 
       <style jsx>{`
+        .payment-link {
+  display: inline-flex;
+  padding: 12px 16px;
+  border-radius: 9px;
+  background: #facc15;
+  color: #1e293b !important;
+  font-weight: 700;
+}
         .lead-details-page {
           min-height: 100vh;
           background: #1e293b;
