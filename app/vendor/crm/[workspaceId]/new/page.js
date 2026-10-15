@@ -28,7 +28,7 @@ const INITIAL_FORM = {
 const CONTACT_FIELDS = [
   ['customer_name', 'Customer name *', 'text'],
   ['phone', 'Phone *', 'tel'],
-  ['email', 'Email', 'email'],
+  ['email', 'Email *', 'email'],
   ['locality', 'Locality', 'text'],
   ['city', 'City', 'text'],
   ['state', 'State', 'text'],
@@ -149,15 +149,35 @@ export default function AddLeadPage() {
   }, [user?.id, workspaceId]);
 
   function update(field, value) {
-    setForm((previous) => ({ ...previous, [field]: value }));
+  if (field === 'phone') {
+    value = value.replace(/[^0-9]/g, '').slice(0, 15);
   }
+
+  if (field === 'pincode') {
+    value = value.replace(/[^0-9]/g, '').slice(0, 6);
+  }
+
+  setForm((previous) => ({ ...previous, [field]: value }));
+}
 
   function validate() {
     if (!form.customer_name.trim()) {
       return 'Please enter the customer name.';
     }
 
-    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (!/^[0-9]{8,15}$/.test(form.phone)) {
+  return 'Phone must contain only digits, between 8 and 15 digits.';
+}
+
+const email = form.email.trim();
+
+if (!email) {
+  return 'Please enter the customer email address.';
+}
+
+if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email)) {
+  return 'Please enter an email in the format test@test.com.';
+}
 
     if (
       !/^[+\d\s().-]+$/.test(form.phone.trim()) ||
@@ -334,27 +354,36 @@ export default function AddLeadPage() {
                   <section>
                     <h2>Customer and location</h2>
                     <div className="grid">
-                      {CONTACT_FIELDS.map(([field, label, type]) => (
-                        <div className="field" key={field}>
-                          <label htmlFor={`lead-${field}`}>
-                            {label}
-                          </label>
-                          <input
-                            id={`lead-${field}`}
-                            type={type}
-                            value={form[field]}
-                            required={
-                              field === 'customer_name' ||
-                              field === 'phone'
-                            }
-                            maxLength={field === 'pincode' ? 6 : 200}
-                            inputMode={
-                              field === 'pincode' ? 'numeric' : undefined
-                            }
-                            onChange={(event) =>
-                              update(field, event.target.value)
-                            }
-                          />
+                     <input
+  id={`lead-${field}`}
+  type={type}
+  value={form[field]}
+  required={
+    field === 'customer_name' ||
+    field === 'phone' ||
+    field === 'email'
+  }
+  maxLength={
+    field === 'pincode'
+      ? 6
+      : field === 'phone'
+        ? 15
+        : 200
+  }
+  inputMode={
+    field === 'pincode' || field === 'phone'
+      ? 'numeric'
+      : field === 'email'
+        ? 'email'
+        : undefined
+  }
+  placeholder={
+    field === 'email'
+      ? 'test@test.com'
+      : undefined
+  }
+  onChange={(event) => update(field, event.target.value)}
+/>
                         </div>
                       ))}
                     </div>
