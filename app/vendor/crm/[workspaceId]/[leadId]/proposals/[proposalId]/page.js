@@ -458,50 +458,48 @@ export default function ProposalViewPage() {
                   )}
                 </section>
 
-                <section>
-                  <h2>Items</h2>
+               <section>
+  <h2>Items</h2>
 
-                  {items.length === 0 ? (
-                    <p>No proposal items were saved.</p>
-                  ) : (
-                    <div className="table-wrap">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Qty</th>
-                            <th>Unit</th>
-                            <th>Rate</th>
-                            <th>Amount</th>
-                          </tr>
-                        </thead>
+  {items.length === 0 ? (
+    <p>No proposal items were saved.</p>
+  ) : (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Rate</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
 
-                        <tbody>
-                          {items.map((item) => (
-                            <tr key={item.id}>
-                              <td>
-                                {ITEM_LABELS[item.item_type] ||
-                                  item.item_type}
-                              </td>
-                              <td>{item.description}</td>
-                              <td>{item.quantity}</td>
-                              <td>{item.unit}</td>
-                              <td>
-                                {formatMoney(
-                                  item.unit_price_inr
-                                )}
-                              </td>
-                              <td>
-                                {formatMoney(item.amount_inr)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      )}
-                    </div>
-                  )}
-                </section>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td>
+                {ITEM_LABELS[item.item_type] ||
+                  item.item_type}
+              </td>
+              <td>{item.description}</td>
+              <td>{item.quantity}</td>
+              <td>{item.unit}</td>
+              <td>
+                {formatMoney(item.unit_price_inr)}
+              </td>
+              <td>
+                {formatMoney(item.amount_inr)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</section>
 
                 <section>
                   <h2>Pricing</h2>
