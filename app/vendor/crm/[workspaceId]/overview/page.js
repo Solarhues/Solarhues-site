@@ -2,476 +2,714 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { supabase } from '../../../../../lib/supabase';
-import { useAuth } from '../../../../providers';
-import Logo from '../../../../../components/Logo';
-
-function formatMoney(value) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0));
-}
+import { supabase } from '../../../../lib/supabase';
+import { useAuth } from '../../../providers';
 
 export default function WorkspaceOverviewPage() {
-  const { workspaceId } = useParams();
   const { user, loading } = useAuth();
 
   const [workspace, setWorkspace] = useState(null);
-  const [canRead, setCanRead] = useState(false);
-  const [loadedFor, setLoadedFor] = useState('');
-  const [accessError, setAccessError] = useState('');
+  const [membership, setMembership] = useState(null);
+  const [leads, setLeads] = useState([]);
+  const [proposals, setProposals] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [payments, setPayments] = useState([]);
 
-  const [stats, setStats] = useState(null);
-  const [recentLeads, setRecentLeads] = useState([]);
-  const [recentProposals, setRecentProposals] = useState([]);
-  const [dataError, setDataError] = useState('');
-  const [dataLoading, setDataLoading] = useState(false);
-
-  const loadKey = `${user?.id || ''}:${workspaceId || ''}`;
+  const [fetching, setFetching] = useState(false);
+  const [loadedWorkspaceId, setLoadedWorkspaceId] = useState(null);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let active = true;
 
     setWorkspace(null);
-    setCanRead(false);
-    setLoadedFor('');
-    setAccessError('');
+    setMembership(null);
+    setLeads([]);
+    setProposals([]);
+    setFollowUps([]);
+    setPayments([]);
+    setError('');
+    setLoadedWorkspaceId(null);
 
-    if (!user?.id || !workspaceId) {
+    if (loading || !user?.id) {
+      setFetching(false);
+
       return () => {
         active = false;
       };
     }
 
-    async function loadAccess() {
+    const userId = user.id;
+    const workspaceId = params.workspaceId;
+
+    async function loadOverview() {
+      setFetching(true);
+
       try {
-        const [workspaceResult, memberResult, profileResult] =
-          await Promise.all([
-            supabase
-              .from('crm_workspaces')
-              .select('id, company_name, status, access_expires_at')
-              .eq('id', workspaceId)
-              .maybeSingle(),
-            supabase
-              .from('crm_workspace_members')
-              .select('member_role, is_active')
-              .eq('workspace_id', workspaceId)
-              .eq('user_id', user.id)
-              .maybeSingle(),
-            supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', user.id)
-              .maybeSingle(),
-          ]);
+        const { data: membershipData, error: membershipError } =
+          await supabase
+            .from('crm_workspace_members')
+            .select(
+              `
+              workspace_id,
+              member_role,
+              is_active,
+              workspace:crm_workspaces (
+                id,
+                company_name,
+                status,
+                access_plan,
+                access_expires_at
+              )
+            `
+            )
+            .eq('user_id', userId)
+            .eq('workspace_id', workspaceId)
+            .eq('is_active', true)
+            .maybeSingle();
 
-        const queryError =
-          workspaceResult.error ||
-          memberResult.error ||
-          profileResult.error;
+        if (membershipError) throw membershipError;
 
-        if (queryError) throw queryError;
-        if (!active) return;
+        const record = membershipData
+          ? {
+              ...membershipData,
+              workspace: Array.isArray(membershipData.workspace)
+                ? membershipData.workspace[0]
+                : membershipData.workspace,
+            }
+          : null;
 
-        const company = workspaceResult.data;
-        const member = memberResult.data;
-        const isAdmin = profileResult.data?.role === 'admin';
+        const currentWorkspace = record?.workspace;
 
-        const available =
-          company &&
-          company.status === 'active' &&
-          (!company.access_expires_at ||
-            new Date(company.access_expires_at).getTime() > Date.now());
+        const now = Date.now();
+        const accessValid =
+          currentWorkspace &&
+          currentWorkspace.status === 'active' &&
+          (
+            !currentWorkspace.access_expires_at ||
+            new Date(currentWorkspace.access_expires_at).getTime() > now
+          );
 
-        if (!available) {
+        if (!accessValid) {
           throw new Error(
-            'Workspace unavailable, suspended, expired, or inaccessible.'
+            'You do not have active access to this workspace.'
           );
         }
 
-        const memberCanRead =
-          member?.is_active &&
-          ['owner', 'sales'].includes(member.member_role);
-
-        setWorkspace(company);
-        setCanRead(Boolean(isAdmin || memberCanRead));
-      } catch (err) {
         if (active) {
-          setAccessError(err.message || 'Could not check workspace access.');
+          setWorkspace(currentWorkspace);
+          setMembership(record);
         }
-      } finally {
-        if (active) setLoadedFor(loadKey);
-      }
-    }
 
-    loadAccess();
-
-    return () => {
-      active = false;
-    };
-  }, [user?.id, workspaceId, loadKey]);
-
-  useEffect(() => {
-    let active = true;
-
-    setStats(null);
-    setRecentLeads([]);
-    setRecentProposals([]);
-    setDataError('');
-
-    if (!user?.id || !workspaceId || !canRead) {
-      return () => {
-        active = false;
-      };
-    }
-
-    async function loadData() {
-      setDataLoading(true);
-
-      try {
-        const count = (table) =>
-          supabase
-            .from(table)
-            .select('id', { count: 'exact', head: true })
-            .eq('workspace_id', workspaceId);
-
-        const nowIso = new Date().toISOString();
-
-        const [
-          leadsTotal,
-          leadsNew,
-          followUpsDue,
-          proposalsDraft,
-          proposalsSent,
-          proposalsAccepted,
-          pendingPayments,
-          latestLeads,
-          latestProposals,
-        ] = await Promise.all([
-          count('crm_leads'),
-          count('crm_leads').eq('stage', 'new'),
-          count('crm_leads')
-            .not('next_follow_up_at', 'is', null)
-            .lte('next_follow_up_at', nowIso)
-            .not('stage', 'in', '(won,lost)'),
-          count('crm_proposals').eq('status', 'draft'),
-          count('crm_proposals').eq('status', 'sent'),
-          count('crm_proposals').eq('status', 'accepted'),
-          supabase
-            .from('crm_payment_requests')
-            .select('amount_inr')
-            .eq('workspace_id', workspaceId)
-            .eq('status', 'pending')
-            .limit(1000),
-          supabase
-            .from('crm_leads')
-            .select('id, customer_name, city, stage, created_at')
-            .eq('workspace_id', workspaceId)
-            .order('created_at', { ascending: false })
-            .limit(5),
-          supabase
-            .from('crm_proposals')
-            .select(
+        const [leadsResult, proposalsResult, followUpsResult, paymentsResult] =
+          await Promise.all([
+            supabase
+              .from('crm_leads')
+              .select(
+                `
+                id,
+                created_at,
+                customer_name,
+                customer_phone,
+                site_city,
+                sales_stage,
+                workspace_id
               `
-              id,
-              lead_id,
-              proposal_number,
-              status,
-              total_inr,
-              created_at,
-              crm_leads ( customer_name )
-            `
-            )
-            .eq('workspace_id', workspaceId)
-            .order('created_at', { ascending: false })
-            .limit(5),
-        ]);
+              )
+              .eq('workspace_id', workspaceId)
+              .order('created_at', { ascending: false })
+              .limit(5),
 
-        const firstError = [
-          leadsTotal,
-          leadsNew,
-          followUpsDue,
-          proposalsDraft,
-          proposalsSent,
-          proposalsAccepted,
-          pendingPayments,
-          latestLeads,
-          latestProposals,
-        ].find((result) => result.error)?.error;
+            supabase
+              .from('crm_proposals')
+              .select(
+                `
+                id,
+                created_at,
+                proposal_number,
+                customer_name,
+                status,
+                total_amount,
+                workspace_id
+              `
+              )
+              .eq('workspace_id', workspaceId)
+              .order('created_at', { ascending: false })
+              .limit(5),
 
-        if (firstError) throw firstError;
+            supabase
+              .from('crm_follow_ups')
+              .select(
+                `
+                id,
+                due_at,
+                status,
+                notes,
+                lead:crm_leads (
+                  id,
+                  customer_name,
+                  workspace_id
+                )
+              `
+              )
+              .eq('workspace_id', workspaceId)
+              .order('due_at', { ascending: true })
+              .limit(5),
+
+            supabase
+              .from('crm_payment_requests')
+              .select(
+                `
+                id,
+                created_at,
+                title,
+                amount,
+                due_date,
+                status,
+                lead:crm_leads (
+                  id,
+                  customer_name,
+                  workspace_id
+                )
+              `
+              )
+              .eq('workspace_id', workspaceId)
+              .order('created_at', { ascending: false })
+              .limit(5),
+          ]);
+
+        if (leadsResult.error) throw leadsResult.error;
+        if (proposalsResult.error) throw proposalsResult.error;
+        if (followUpsResult.error) throw followUpsResult.error;
+        if (paymentsResult.error) throw paymentsResult.error;
+
         if (!active) return;
 
-        const pendingRows = pendingPayments.data || [];
-
-        setStats({
-          leadsTotal: leadsTotal.count || 0,
-          leadsNew: leadsNew.count || 0,
-          followUpsDue: followUpsDue.count || 0,
-          proposalsDraft: proposalsDraft.count || 0,
-          proposalsSent: proposalsSent.count || 0,
-          proposalsAccepted: proposalsAccepted.count || 0,
-          pendingCount: pendingRows.length,
-          pendingAmount: pendingRows.reduce(
-            (total, row) => total + Number(row.amount_inr || 0),
-            0
-          ),
-        });
-        setRecentLeads(latestLeads.data || []);
-        setRecentProposals(latestProposals.data || []);
+        setLeads(leadsResult.data || []);
+        setProposals(proposalsResult.data || []);
+        setFollowUps(followUpsResult.data || []);
+        setPayments(paymentsResult.data || []);
       } catch (err) {
         if (active) {
-          setDataError(err.message || 'Could not load the dashboard.');
+          setError(err.message || 'Could not load the workspace overview.');
         }
       } finally {
-        if (active) setDataLoading(false);
+        if (active) {
+          setFetching(false);
+          setLoadedWorkspaceId(workspaceId);
+        }
       }
     }
 
-    loadData();
+    loadOverview();
 
     return () => {
       active = false;
     };
-  }, [user?.id, workspaceId, canRead]);
+  }, [user?.id, loading, params.workspaceId, retry]);
 
-  const base = `/vendor/crm/${workspaceId}`;
-  const waiting = loading || Boolean(user && loadedFor !== loadKey);
+  const waiting =
+    loading ||
+    Boolean(
+      user && (fetching || loadedWorkspaceId !== params.workspaceId)
+    );
 
-  const cards = stats
-    ? [
-        ['Total leads', stats.leadsTotal, base],
-        ['New leads', stats.leadsNew, base],
-        ['Follow-ups due', stats.followUpsDue, `${base}/follow-ups`],
-        ['Draft proposals', stats.proposalsDraft, `${base}/proposals`],
-        ['Sent proposals', stats.proposalsSent, `${base}/proposals`],
-        ['Accepted proposals', stats.proposalsAccepted, `${base}/proposals`],
-        [
-          `Pending payments (${stats.pendingCount})`,
-          formatMoney(stats.pendingAmount),
-          `${base}/payments`,
-        ],
-      ]
-    : [];
+  const leadCount = leads.length;
+  const proposalCount = proposals.length;
+  const pendingFollowUps = followUps.filter(
+    (item) => item.status !== 'completed'
+  ).length;
+
+  const pendingPayments = payments.filter(
+    (item) => item.status !== 'paid' && item.status !== 'cancelled'
+  ).length;
+
+  const base = `/vendor/crm/${params.workspaceId}`;
+
+  const formatDate = (value) => {
+    if (!value) return '—';
+
+    return new Date(value).toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatMoney = (value) => {
+    const amount = Number(value || 0);
+
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
   return (
     <div className="overview-page">
-      <header>
-        <Logo height={34} />
-        <Link href="/vendor/crm">← All workspaces</Link>
-      </header>
+      <div className="overview-heading">
+        <div>
+          <p className="overview-eyebrow">CRM overview</p>
+          <h1>{workspace?.company_name || 'Workspace'}</h1>
+          <p className="overview-subtitle">
+            Recent leads, proposals, follow-ups and payment requests.
+          </p>
+        </div>
 
-      <main>
-        <p className="eyebrow">Installer CRM</p>
-        <h1>Overview</h1>
+        <Link href={`${base}/new`} className="primary-action">
+          + Add lead
+        </Link>
+      </div>
 
-        {waiting && <p role="status">Checking workspace access…</p>}
+      {waiting && (
+        <div className="overview-notice" role="status">
+          Loading workspace overview…
+        </div>
+      )}
 
-        {!loading && !user && (
-          <div className="notice">
-            Please <Link href="/vendor-login">sign in</Link> first.
-          </div>
-        )}
+      {!loading && !user && (
+        <div className="overview-notice">
+          <h2>Sign in required</h2>
+          <p>Use your installer account to view this workspace.</p>
+          <Link href="/vendor-login">Go to installer login →</Link>
+        </div>
+      )}
 
-        {!waiting && user && accessError && (
-          <div className="error" role="alert">
-            {accessError}
-          </div>
-        )}
+      {!waiting && user && error && (
+        <div className="overview-error" role="alert">
+          <h2>Could not load overview</h2>
+          <p>{error}</p>
 
-        {!waiting && user && workspace && !canRead && (
-          <div className="notice">
-            Only workspace owners, sales staff and SolarHues admins can view
-            this dashboard.
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => setRetry((value) => value + 1)}
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
-        {!waiting && user && workspace && canRead && (
-          <>
-            <p className="subtitle">{workspace.company_name}</p>
+      {!waiting && user && !error && workspace && (
+        <>
+          <section className="summary-grid">
+            <Link href={base} className="summary-card">
+              <span className="summary-number">{leadCount}</span>
+              <span className="summary-label">Recent leads</span>
+              <span className="summary-link">View leads →</span>
+            </Link>
 
-            <div className="actions">
-              <Link href={`${base}/new`} className="primary">
-                + Add lead
-              </Link>
-              <Link href={base} className="ghost">
-                View all leads
-              </Link>
-              <Link href={`${base}/proposals`} className="ghost">
-                View all proposals
-              </Link>
+            <Link
+              href={`${base}/proposals`}
+              className="summary-card"
+            >
+              <span className="summary-number">{proposalCount}</span>
+              <span className="summary-label">Recent proposals</span>
+              <span className="summary-link">View proposals →</span>
+            </Link>
+
+            <Link
+              href={`${base}/follow-ups`}
+              className="summary-card"
+            >
+              <span className="summary-number">{pendingFollowUps}</span>
+              <span className="summary-label">Open follow-ups</span>
+              <span className="summary-link">View follow-ups →</span>
+            </Link>
+
+            <Link
+              href={`${base}/payments`}
+              className="summary-card"
+            >
+              <span className="summary-number">{pendingPayments}</span>
+              <span className="summary-label">Open payments</span>
+              <span className="summary-link">View payments →</span>
+            </Link>
+          </section>
+
+          <section className="overview-section">
+            <div className="section-heading">
+              <h2>Latest leads</h2>
+              <Link href={base}>View all →</Link>
             </div>
 
-            {dataError && (
-              <div className="error" role="alert">
-                {dataError}
+            {leads.length === 0 ? (
+              <div className="empty-state">
+                <p>No leads have been added yet.</p>
+                <Link href={`${base}/new`}>Add your first lead →</Link>
               </div>
-            )}
+            ) : (
+              <div className="record-list">
+                {leads.map((lead) => (
+                  <Link
+                    href={`${base}/${lead.id}`}
+                    className="record-row"
+                    key={lead.id}
+                  >
+                    <div>
+                      <strong>{lead.customer_name || 'Unnamed customer'}</strong>
+                      <span>
+                        {lead.site_city || 'Location not set'} ·{' '}
+                        {lead.sales_stage || 'New'}
+                      </span>
+                    </div>
 
-            {dataLoading && <p role="status">Loading dashboard…</p>}
-
-            {stats && (
-              <div className="cards">
-                {cards.map(([label, value, href]) => (
-                  <Link key={label} href={href} className="card">
-                    <span className="value">{value}</span>
-                    <span className="label">{label}</span>
+                    <span className="record-date">
+                      {formatDate(lead.created_at)}
+                    </span>
                   </Link>
                 ))}
               </div>
             )}
+          </section>
 
-            <div className="columns">
-              <section>
-                <h2>Recent leads</h2>
-                {recentLeads.length === 0 ? (
-                  <p className="muted">No leads yet.</p>
-                ) : (
-                  <ul>
-                    {recentLeads.map((lead) => (
-                      <li key={lead.id}>
-                        <Link href={`${base}/${lead.id}`}>
-                          {lead.customer_name}
-                        </Link>
-                        <span className="muted">
-                          {[lead.city, lead.stage].filter(Boolean).join(' · ')}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              <section>
-                <h2>Recent proposals</h2>
-                {recentProposals.length === 0 ? (
-                  <p className="muted">No proposals yet.</p>
-                ) : (
-                  <ul>
-                    {recentProposals.map((proposal) => (
-                      <li key={proposal.id}>
-                        <Link
-                          href={`${base}/${proposal.lead_id}/proposals/${proposal.id}`}
-                        >
-                          {proposal.proposal_number}
-                        </Link>
-                        <span className="muted">
-                          {proposal.crm_leads?.customer_name || '—'} ·{' '}
-                          {proposal.status} · {formatMoney(proposal.total_inr)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+          <section className="overview-section">
+            <div className="section-heading">
+              <h2>Latest proposals</h2>
+              <Link href={`${base}/proposals`}>View all →</Link>
             </div>
-          </>
-        )}
-      </main>
+
+            {proposals.length === 0 ? (
+              <div className="empty-state">
+                <p>No proposals have been created yet.</p>
+                <Link href={`${base}/proposals`}>
+                  Open proposals →
+                </Link>
+              </div>
+            ) : (
+              <div className="record-list">
+                {proposals.map((proposal) => (
+                  <Link
+                    href={`${base}/proposals/${proposal.id}`}
+                    className="record-row"
+                    key={proposal.id}
+                  >
+                    <div>
+                      <strong>
+                        {proposal.proposal_number || 'Untitled proposal'}
+                      </strong>
+                      <span>
+                        {proposal.customer_name || 'No customer'} ·{' '}
+                        {proposal.status || 'Draft'}
+                      </span>
+                    </div>
+
+                    <span className="record-date">
+                      {formatMoney(proposal.total_amount)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <div className="two-column">
+            <section className="overview-section">
+              <div className="section-heading">
+                <h2>Follow-ups</h2>
+                <Link href={`${base}/follow-ups`}>View all →</Link>
+              </div>
+
+              {followUps.length === 0 ? (
+                <div className="empty-state">
+                  <p>No follow-ups scheduled.</p>
+                </div>
+              ) : (
+                <div className="record-list">
+                  {followUps.map((item) => (
+                    <Link
+                      href={`${base}/${item.lead?.id || ''}`}
+                      className="record-row"
+                      key={item.id}
+                    >
+                      <div>
+                        <strong>
+                          {item.lead?.customer_name || 'Customer lead'}
+                        </strong>
+                        <span>
+                          {item.notes || 'Follow-up'} ·{' '}
+                          {item.status || 'Pending'}
+                        </span>
+                      </div>
+
+                      <span className="record-date">
+                        {formatDate(item.due_at)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="overview-section">
+              <div className="section-heading">
+                <h2>Payment requests</h2>
+                <Link href={`${base}/payments`}>View all →</Link>
+              </div>
+
+              {payments.length === 0 ? (
+                <div className="empty-state">
+                  <p>No payment requests recorded.</p>
+                </div>
+              ) : (
+                <div className="record-list">
+                  {payments.map((item) => (
+                    <Link
+                      href={`${base}/${item.lead?.id || ''}`}
+                      className="record-row"
+                      key={item.id}
+                    >
+                      <div>
+                        <strong>{item.title || 'Payment request'}</strong>
+                        <span>
+                          {item.lead?.customer_name || 'Customer lead'} ·{' '}
+                          {item.status || 'Pending'}
+                        </span>
+                      </div>
+
+                      <span className="record-date">
+                        {formatMoney(item.amount)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          <section className="workspace-meta">
+            <h2>Workspace access</h2>
+
+            <div className="meta-badges">
+              <span>Role: {membership?.member_role || '—'}</span>
+              <span>Plan: {workspace.access_plan || '—'}</span>
+              <span>Status: {workspace.status}</span>
+            </div>
+
+            <p className="meta-note">
+              Workspace access does not by itself confirm installer approval
+              or payment of a subscription.
+            </p>
+          </section>
+        </>
+      )}
 
       <style jsx>{`
         .overview-page {
-          min-height: 100vh;
-          background: #1e293b;
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 32px 20px 72px;
           color: #f8fafc;
-          font-family: Inter, -apple-system, sans-serif;
         }
-        header {
+
+        .overview-heading {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           flex-wrap: wrap;
-          gap: 16px;
-          padding: 14px 24px;
-          border-bottom: 1px solid #334155;
+          gap: 18px;
         }
+
+        .overview-eyebrow {
+          color: #6ee7b7;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        h1 {
+          margin: 0;
+          font-size: 30px;
+        }
+
+        h2 {
+          margin: 0;
+          font-size: 20px;
+        }
+
+        .overview-subtitle {
+          color: #cbd5e1;
+          margin: 8px 0 0;
+        }
+
         .overview-page :global(a) {
           color: #facc15;
           text-decoration: none;
         }
-        main {
-          max-width: 1100px;
-          margin: auto;
-          padding: 32px 20px 72px;
-        }
-        h1 { margin: 0 0 8px; }
-        h2 { margin: 0 0 14px; font-size: 18px; }
-        .eyebrow {
-          color: #6ee7b7;
-          text-transform: uppercase;
-          letter-spacing: .1em;
-          font-size: 12px;
-        }
-        .subtitle, .muted { color: #94a3b8; }
-        .actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin: 20px 0;
-        }
-        .actions :global(a) {
-          padding: 11px 16px;
-          border-radius: 9px;
-          font-weight: 700;
-          font-size: 14px;
-        }
-        .actions :global(a.primary) {
+
+        .overview-page :global(a.primary-action) {
+          display: inline-flex;
+          align-items: center;
+          padding: 12px 18px;
+          border-radius: 10px;
           background: #facc15;
           color: #1e293b;
+          font-weight: 700;
+          white-space: nowrap;
         }
-        .actions :global(a.ghost) {
-          border: 1px solid #64748b;
-          background: #0f172a;
-          color: #fff;
-        }
-        .cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 14px;
-          margin: 24px 0;
-        }
-        .cards :global(a.card) {
-          display: grid;
-          gap: 6px;
-          padding: 18px;
-          border: 1px solid #475569;
+
+        .overview-notice,
+        .overview-error,
+        .overview-section,
+        .workspace-meta {
+          margin-top: 24px;
+          padding: 22px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
           border-radius: 14px;
-          background: rgba(255,255,255,.03);
+          background: rgba(255, 255, 255, 0.03);
+          line-height: 1.6;
+        }
+
+        .overview-error {
+          color: #fca5a5;
+          border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        button {
+          margin-top: 12px;
+          padding: 10px 16px;
+          border: 0;
+          border-radius: 8px;
+          background: #facc15;
+          color: #1e293b;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+          margin-top: 24px;
+        }
+
+        .overview-page :global(a.summary-card) {
+          display: block;
+          padding: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.03);
           color: #f8fafc;
         }
-        .value { font-size: 26px; font-weight: 800; }
-        .label { color: #94a3b8; font-size: 13px; }
-        .columns {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 18px;
+
+        .overview-page :global(a.summary-card:hover) {
+          border-color: #facc15;
         }
-        section, .notice, .error {
-          margin: 20px 0;
-          padding: 22px;
-          border: 1px solid #475569;
-          border-radius: 14px;
-          background: rgba(255,255,255,.03);
+
+        .summary-number {
+          display: block;
+          font-size: 28px;
+          font-weight: 800;
         }
-        .error { color: #fca5a5; }
-        ul {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-          display: grid;
-          gap: 12px;
-        }
-        li {
-          display: grid;
-          gap: 3px;
+
+        .summary-label {
+          display: block;
+          margin-top: 6px;
+          color: #cbd5e1;
           font-size: 14px;
         }
-        li .muted { font-size: 12px; }
-        @media (max-width: 760px) {
-          .columns { grid-template-columns: 1fr; }
+
+        .summary-link {
+          display: block;
+          margin-top: 12px;
+          color: #facc15;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .section-heading {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .record-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .overview-page :global(a.record-row) {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 16px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 10px;
+          background: rgba(15, 23, 42, 0.45);
+          color: #f8fafc;
+        }
+
+        .overview-page :global(a.record-row:hover) {
+          border-color: #facc15;
+        }
+
+        .record-row strong {
+          display: block;
+        }
+
+        .record-row span {
+          color: #94a3b8;
+          font-size: 13px;
+        }
+
+        .record-date {
+          white-space: nowrap;
+          color: #facc15 !important;
+          font-weight: 700;
+        }
+
+        .empty-state {
+          padding: 18px;
+          border: 1px dashed #475569;
+          border-radius: 10px;
+          color: #cbd5e1;
+        }
+
+        .two-column {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .meta-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .meta-badges span {
+          padding: 5px 10px;
+          border-radius: 999px;
+          background: rgba(5, 150, 105, 0.15);
+          color: #6ee7b7;
+          font-size: 12px;
+        }
+
+        .meta-note {
+          margin: 16px 0 0;
+          color: #94a3b8;
+          font-size: 12px;
+        }
+
+        @media (max-width: 900px) {
+          .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .two-column {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .summary-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>
