@@ -8,6 +8,7 @@ import { useAuth } from '../../../../../../providers';
 import ProposalOpeningPages from '../../../../../../../components/ProposalOpeningPages';
 import ProposalCapabilitiesPages from '../../../../../../../components/ProposalCapabilitiesPages';
 import ProposalDesignPages from '../../../../../../../components/ProposalDesignPages';
+import ProposalCommercialPages from '../../../../../../../components/ProposalCommercialPages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -70,6 +71,12 @@ const EMPTY_DESIGN = {
   annualGeneration: '',
 };
 
+const EMPTY_COMMERCIAL = {
+  basicAmount: '',
+  gstAmount: '',
+  totalIncludingGst: '',
+};
+
 function linesToOptions(value) {
   return value
     .split('\n')
@@ -91,6 +98,24 @@ function parseEquipment(value) {
         name,
         specification,
         quantity,
+      };
+    });
+}
+
+function parsePayments(value) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [milestone, percentage, amount] = line
+        .split('|')
+        .map((part) => part.trim());
+
+      return {
+        milestone,
+        percentage,
+        amount,
       };
     });
 }
@@ -135,6 +160,16 @@ export default function ProposalPrintPage() {
 
   const [equipmentText, setEquipmentText] = useState('');
 
+  const [commercial, setCommercial] = useState({
+    ...EMPTY_COMMERCIAL,
+  });
+
+  const [paymentText, setPaymentText] = useState('');
+
+  const [warrantyText, setWarrantyText] = useState('');
+
+  const [nextStepsText, setNextStepsText] = useState('');
+
   const [reviewed, setReviewed] = useState(false);
   const [printError, setPrintError] = useState('');
 
@@ -152,6 +187,10 @@ export default function ProposalPrintPage() {
     setSystemDesign({ ...EMPTY_DESIGN });
     setScopeText('');
     setEquipmentText('');
+    setCommercial({ ...EMPTY_COMMERCIAL });
+    setPaymentText('');
+    setWarrantyText('');
+    setNextStepsText('');
 
     setReviewed(false);
     setPrintError('');
@@ -334,7 +373,7 @@ export default function ProposalPrintPage() {
 
     document.title =
       `${record.proposal.proposal_number || 'Solar Proposal'} ` +
-      '- Pages 1 to 6';
+      '- Pages 1 to 8';
 
     return () => {
       document.title = previousTitle;
@@ -395,6 +434,30 @@ export default function ProposalPrintPage() {
   function updateEquipmentText(value) {
     clearReview();
     setEquipmentText(value);
+  }
+
+  function updateCommercial(field, value) {
+    clearReview();
+
+    setCommercial((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function updatePaymentText(value) {
+    clearReview();
+    setPaymentText(value);
+  }
+
+  function updateWarrantyText(value) {
+    clearReview();
+    setWarrantyText(value);
+  }
+
+  function updateNextStepsText(value) {
+    clearReview();
+    setNextStepsText(value);
   }
 
   function printDocument() {
@@ -475,6 +538,12 @@ export default function ProposalPrintPage() {
 
   const equipmentItems = parseEquipment(equipmentText);
 
+  const paymentSchedule = parsePayments(paymentText);
+
+  const warrantyItems = linesToOptions(warrantyText);
+
+  const nextSteps = linesToOptions(nextStepsText);
+
   return (
     <div className="print-page">
       <div className="screen-only">
@@ -493,11 +562,12 @@ export default function ProposalPrintPage() {
 
         <p className="eyebrow">SolarHues customer document</p>
 
-        <h1>Proposal preview — pages 1 to 6</h1>
+        <h1>Proposal preview — pages 1 to 8</h1>
 
         <p className="intro">
           Cover, company profiles, service capabilities, product
-          range, system design, scope of work and equipment list.
+          range, system design, scope, equipment, commercial
+          terms, warranties and next steps.
         </p>
 
         {waiting && (
@@ -962,18 +1032,157 @@ export default function ProposalPrintPage() {
             </section>
 
             <section className="panel">
+              <h2>Pages 7 and 8 — Commercial terms</h2>
+
+              <p className="hint">
+                Enter only amounts and terms that the installer has
+                confirmed in writing. Do not present indicative
+                figures as final payable amounts.
+              </p>
+
+              <div className="editor-grid">
+                <div className="field">
+                  <label htmlFor="commercial-basic">
+                    Basic proposal value — ₹
+                  </label>
+
+                  <input
+                    id="commercial-basic"
+                    type="number"
+                    min="0"
+                    value={commercial.basicAmount}
+                    onChange={(event) =>
+                      updateCommercial(
+                        'basicAmount',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="commercial-gst">
+                    GST amount — ₹
+                  </label>
+
+                  <input
+                    id="commercial-gst"
+                    type="number"
+                    min="0"
+                    value={commercial.gstAmount}
+                    onChange={(event) =>
+                      updateCommercial(
+                        'gstAmount',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="commercial-total">
+                    Total including GST — ₹
+                  </label>
+
+                  <input
+                    id="commercial-total"
+                    type="number"
+                    min="0"
+                    value={commercial.totalIncludingGst}
+                    onChange={(event) =>
+                      updateCommercial(
+                        'totalIncludingGst',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="payment-schedule">
+                  Payment schedule — one milestone per line
+                </label>
+
+                <textarea
+                  id="payment-schedule"
+                  rows={5}
+                  maxLength={1000}
+                  value={paymentText}
+                  placeholder={
+                    'Advance on agreement | 25% | 50000\n' +
+                    'Material dispatch | 50% | 100000\n' +
+                    'Commissioning | 25% | 50000'
+                  }
+                  onChange={(event) =>
+                    updatePaymentText(event.target.value)
+                  }
+                />
+
+                <span className="hint">
+                  Use this format:
+                  Milestone | Percentage | Amount
+                </span>
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="warranty-terms">
+                  Warranty summary — one item per line
+                </label>
+
+                <textarea
+                  id="warranty-terms"
+                  rows={5}
+                  maxLength={1000}
+                  value={warrantyText}
+                  placeholder={
+                    'Solar modules: manufacturer warranty as applicable\n' +
+                    'Inverter: standard manufacturer warranty\n' +
+                    'Installation workmanship: as stated in agreement'
+                  }
+                  onChange={(event) =>
+                    updateWarrantyText(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="next-steps">
+                  Next steps — one step per line
+                </label>
+
+                <textarea
+                  id="next-steps"
+                  rows={5}
+                  maxLength={1000}
+                  value={nextStepsText}
+                  placeholder={
+                    'Confirm proposal and sign agreement\n' +
+                    'Complete site survey\n' +
+                    'Submit DISCOM application\n' +
+                    'Schedule installation'
+                  }
+                  onChange={(event) =>
+                    updateNextStepsText(event.target.value)
+                  }
+                />
+              </div>
+            </section>
+
+            <section className="panel">
               <h2>Review and print</h2>
 
               <p className="warning">
                 The descriptions, logo URL, contact details,
                 service selections, product ranges, design details,
-                scope and equipment entered here are temporary.
-                They are not saved and will be lost when you
-                refresh or leave this page.
+                scope, equipment, commercial terms, warranties and
+                next steps entered here are temporary. They are not
+                saved and will be lost when you refresh or leave
+                this page.
               </p>
 
               <p className="hint">
-                This preview contains only the first six pages.
+                This preview contains only the first eight pages.
                 It is not yet the complete technical or commercial
                 proposal. Do not send it as the full offer.
               </p>
@@ -997,7 +1206,8 @@ export default function ProposalPrintPage() {
                 <span>
                   I have reviewed the customer details, company
                   descriptions, branding, service coverage, product
-                  range, system design, scope and equipment list.
+                  range, system design, scope, equipment list,
+                  commercial terms, warranties and next steps.
                 </span>
               </label>
 
@@ -1012,7 +1222,7 @@ export default function ProposalPrintPage() {
                 disabled={!reviewed || !logoUrlValid}
                 onClick={printDocument}
               >
-                Print / Save pages 1 to 6 as PDF
+                Print / Save pages 1 to 8 as PDF
               </button>
 
               <p className="hint">
@@ -1037,7 +1247,7 @@ export default function ProposalPrintPage() {
             lead={record.lead}
             partnerProfile={documentProfile}
             solarHuesAbout={solarHuesAbout}
-            totalPages={6}
+            totalPages={8}
           />
 
           <ProposalCapabilitiesPages
@@ -1045,7 +1255,7 @@ export default function ProposalPrintPage() {
             proposal={record.proposal}
             serviceCoverage={serviceCoverage}
             productRange={productRange}
-            totalPages={6}
+            totalPages={8}
           />
 
           <ProposalDesignPages
@@ -1055,7 +1265,18 @@ export default function ProposalPrintPage() {
             systemDesign={systemDesign}
             scopeItems={scopeItems}
             equipmentItems={equipmentItems}
-            totalPages={6}
+            totalPages={8}
+          />
+
+          <ProposalCommercialPages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            commercial={commercial}
+            paymentSchedule={paymentSchedule}
+            warrantyItems={warrantyItems}
+            nextSteps={nextSteps}
+            totalPages={8}
           />
         </div>
       )}
