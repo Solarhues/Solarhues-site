@@ -11,6 +11,7 @@ import ProposalDesignPages from '../../../../../../../components/ProposalDesignP
 import ProposalCommercialPages from '../../../../../../../components/ProposalCommercialPages';
 import ProposalTimelineImpactPages from '../../../../../../../components/ProposalTimelineImpactPages';
 import ProposalSiteResponsibilityPages from '../../../../../../../components/ProposalSiteResponsibilityPages';
+import ProposalSafetyAcceptancePages from '../../../../../../../components/ProposalSafetyAcceptancePages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -229,6 +230,14 @@ export default function ProposalPrintPage() {
 
   const [documentsText, setDocumentsText] = useState('');
 
+  const [safetyText, setSafetyText] = useState('');
+
+  const [qualityText, setQualityText] = useState('');
+
+  const [complianceText, setComplianceText] = useState('');
+
+  const [acceptanceNotes, setAcceptanceNotes] = useState('');
+
   const [reviewed, setReviewed] = useState(false);
   const [printError, setPrintError] = useState('');
 
@@ -256,6 +265,10 @@ export default function ProposalPrintPage() {
     setSiteLayout({ ...EMPTY_SITE_LAYOUT });
     setResponsibilitiesText('');
     setDocumentsText('');
+    setSafetyText('');
+    setQualityText('');
+    setComplianceText('');
+    setAcceptanceNotes('');
 
     setReviewed(false);
     setPrintError('');
@@ -438,7 +451,7 @@ export default function ProposalPrintPage() {
 
     document.title =
       `${record.proposal.proposal_number || 'Solar Proposal'} ` +
-      '- Pages 1 to 12';
+      '- Pages 1 to 14';
 
     return () => {
       document.title = previousTitle;
@@ -567,6 +580,26 @@ export default function ProposalPrintPage() {
     setDocumentsText(value);
   }
 
+  function updateSafetyText(value) {
+    clearReview();
+    setSafetyText(value);
+  }
+
+  function updateQualityText(value) {
+    clearReview();
+    setQualityText(value);
+  }
+
+  function updateComplianceText(value) {
+    clearReview();
+    setComplianceText(value);
+  }
+
+  function updateAcceptanceNotes(value) {
+    clearReview();
+    setAcceptanceNotes(value);
+  }
+
   function printDocument() {
     setPrintError('');
 
@@ -659,6 +692,12 @@ export default function ProposalPrintPage() {
 
   const documentsRequired = linesToOptions(documentsText);
 
+  const safetyItems = linesToOptions(safetyText);
+
+  const qualityItems = linesToOptions(qualityText);
+
+  const complianceItems = linesToOptions(complianceText);
+
   return (
     <div className="print-page">
       <div className="screen-only">
@@ -677,13 +716,13 @@ export default function ProposalPrintPage() {
 
         <p className="eyebrow">SolarHues customer document</p>
 
-        <h1>Proposal preview — pages 1 to 12</h1>
+        <h1>Proposal preview — pages 1 to 14</h1>
 
         <p className="intro">
           Cover, company profiles, service capabilities, product
           range, system design, scope, equipment, commercial
           terms, warranties, timeline, environmental impact, site
-          layout and customer responsibilities.
+          layout, responsibilities, safety and acceptance.
         </p>
 
         {waiting && (
@@ -1607,6 +1646,104 @@ export default function ProposalPrintPage() {
             </section>
 
             <section className="panel">
+              <h2>Pages 13 and 14 — Safety and acceptance</h2>
+
+              <p className="hint">
+                Add only practices and commitments the installer
+                will actually follow. Do not make unverified
+                compliance, certification, insurance or performance
+                claims.
+              </p>
+
+              <div className="field spaced">
+                <label htmlFor="safety-items">
+                  Safety practices — one item per line
+                </label>
+
+                <textarea
+                  id="safety-items"
+                  rows={5}
+                  maxLength={1000}
+                  value={safetyText}
+                  placeholder={
+                    'Trained installation team\n' +
+                    'Personal protective equipment during rooftop work\n' +
+                    'Electrical isolation before installation'
+                  }
+                  onChange={(event) =>
+                    updateSafetyText(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="quality-items">
+                  Quality checks — one item per line
+                </label>
+
+                <textarea
+                  id="quality-items"
+                  rows={5}
+                  maxLength={1000}
+                  value={qualityText}
+                  placeholder={
+                    'Pre-installation site check\n' +
+                    'Post-installation electrical testing\n' +
+                    'Photo documentation of completed work'
+                  }
+                  onChange={(event) =>
+                    updateQualityText(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="compliance-items">
+                  Compliance and approvals — one item per line
+                </label>
+
+                <textarea
+                  id="compliance-items"
+                  rows={5}
+                  maxLength={1000}
+                  value={complianceText}
+                  placeholder={
+                    'DISCOM application support\n' +
+                    'Net-metering documentation support\n' +
+                    'Compliance with applicable local requirements'
+                  }
+                  onChange={(event) =>
+                    updateComplianceText(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="acceptance-notes">
+                  Acceptance notes — optional
+                </label>
+
+                <textarea
+                  id="acceptance-notes"
+                  rows={4}
+                  maxLength={800}
+                  value={acceptanceNotes}
+                  placeholder="Any customer-specific acceptance instructions or notes"
+                  onChange={(event) =>
+                    updateAcceptanceNotes(event.target.value)
+                  }
+                />
+              </div>
+
+              <p className="hint">
+                This acceptance page is a preview only. It must not
+                be used to collect payments or execute a binding
+                contract until the agreement and payment workflows
+                are separately approved.
+              </p>
+            </section>
+
+            <section className="panel">
               <h2>Review and print</h2>
 
               <p className="warning">
@@ -1614,13 +1751,14 @@ export default function ProposalPrintPage() {
                 service selections, product ranges, design details,
                 scope, equipment, commercial terms, warranties,
                 next steps, timeline, environmental impact, savings,
-                site layout, responsibilities and documents entered
+                site layout, responsibilities, documents, safety,
+                quality, compliance and acceptance notes entered
                 here are temporary. They are not saved and will be
                 lost when you refresh or leave this page.
               </p>
 
               <p className="hint">
-                This preview contains only the first twelve pages.
+                This preview contains only the first fourteen pages.
                 It is not yet the complete technical or commercial
                 proposal. Do not send it as the full offer.
               </p>
@@ -1647,7 +1785,8 @@ export default function ProposalPrintPage() {
                   range, system design, scope, equipment list,
                   commercial terms, warranties, next steps,
                   timeline, environmental impact, savings, site
-                  layout, responsibilities and documents.
+                  layout, responsibilities, documents, safety,
+                  quality, compliance and acceptance notes.
                 </span>
               </label>
 
@@ -1662,7 +1801,7 @@ export default function ProposalPrintPage() {
                 disabled={!reviewed || !logoUrlValid}
                 onClick={printDocument}
               >
-                Print / Save pages 1 to 12 as PDF
+                Print / Save pages 1 to 14 as PDF
               </button>
 
               <p className="hint">
@@ -1687,7 +1826,7 @@ export default function ProposalPrintPage() {
             lead={record.lead}
             partnerProfile={documentProfile}
             solarHuesAbout={solarHuesAbout}
-            totalPages={12}
+            totalPages={14}
           />
 
           <ProposalCapabilitiesPages
@@ -1695,7 +1834,7 @@ export default function ProposalPrintPage() {
             proposal={record.proposal}
             serviceCoverage={serviceCoverage}
             productRange={productRange}
-            totalPages={12}
+            totalPages={14}
           />
 
           <ProposalDesignPages
@@ -1705,7 +1844,7 @@ export default function ProposalPrintPage() {
             systemDesign={systemDesign}
             scopeItems={scopeItems}
             equipmentItems={equipmentItems}
-            totalPages={12}
+            totalPages={14}
           />
 
           <ProposalCommercialPages
@@ -1716,7 +1855,7 @@ export default function ProposalPrintPage() {
             paymentSchedule={paymentSchedule}
             warrantyItems={warrantyItems}
             nextSteps={nextSteps}
-            totalPages={12}
+            totalPages={14}
           />
 
           <ProposalTimelineImpactPages
@@ -1726,7 +1865,7 @@ export default function ProposalPrintPage() {
             timelineItems={timelineItems}
             environmental={environmental}
             savings={savings}
-            totalPages={12}
+            totalPages={14}
           />
 
           <ProposalSiteResponsibilityPages
@@ -1736,7 +1875,18 @@ export default function ProposalPrintPage() {
             siteLayout={siteLayout}
             customerResponsibilities={customerResponsibilities}
             documentsRequired={documentsRequired}
-            totalPages={12}
+            totalPages={14}
+          />
+
+          <ProposalSafetyAcceptancePages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            safetyItems={safetyItems}
+            qualityItems={qualityItems}
+            complianceItems={complianceItems}
+            acceptanceNotes={acceptanceNotes}
+            totalPages={14}
           />
         </div>
       )}
