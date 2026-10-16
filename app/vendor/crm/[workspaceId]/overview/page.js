@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '../../../../lib/supabase';
-import { useAuth } from '../../../providers';
+import { supabase } from '../../../../../lib/supabase';
+import { useAuth } from '../../../../providers';
 
 export default function WorkspaceOverviewPage() {
   const { user, loading } = useAuth();
