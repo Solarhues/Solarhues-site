@@ -10,6 +10,7 @@ import ProposalCapabilitiesPages from '../../../../../../../components/ProposalC
 import ProposalDesignPages from '../../../../../../../components/ProposalDesignPages';
 import ProposalCommercialPages from '../../../../../../../components/ProposalCommercialPages';
 import ProposalTimelineImpactPages from '../../../../../../../components/ProposalTimelineImpactPages';
+import ProposalSiteResponsibilityPages from '../../../../../../../components/ProposalSiteResponsibilityPages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -86,6 +87,16 @@ const EMPTY_ENVIRONMENTAL = {
 const EMPTY_SAVINGS = {
   annualSavings: '',
   paybackYears: '',
+};
+
+const EMPTY_SITE_LAYOUT = {
+  roofType: '',
+  availableRoofArea: '',
+  moduleArea: '',
+  inverterLocation: '',
+  cableRoute: '',
+  earthingLocation: '',
+  layoutNotes: '',
 };
 
 function linesToOptions(value) {
@@ -209,6 +220,15 @@ export default function ProposalPrintPage() {
     ...EMPTY_SAVINGS,
   });
 
+  const [siteLayout, setSiteLayout] = useState({
+    ...EMPTY_SITE_LAYOUT,
+  });
+
+  const [responsibilitiesText, setResponsibilitiesText] =
+    useState('');
+
+  const [documentsText, setDocumentsText] = useState('');
+
   const [reviewed, setReviewed] = useState(false);
   const [printError, setPrintError] = useState('');
 
@@ -233,6 +253,9 @@ export default function ProposalPrintPage() {
     setTimelineText('');
     setEnvironmental({ ...EMPTY_ENVIRONMENTAL });
     setSavings({ ...EMPTY_SAVINGS });
+    setSiteLayout({ ...EMPTY_SITE_LAYOUT });
+    setResponsibilitiesText('');
+    setDocumentsText('');
 
     setReviewed(false);
     setPrintError('');
@@ -415,7 +438,7 @@ export default function ProposalPrintPage() {
 
     document.title =
       `${record.proposal.proposal_number || 'Solar Proposal'} ` +
-      '- Pages 1 to 10';
+      '- Pages 1 to 12';
 
     return () => {
       document.title = previousTitle;
@@ -525,6 +548,25 @@ export default function ProposalPrintPage() {
     }));
   }
 
+  function updateSiteLayout(field, value) {
+    clearReview();
+
+    setSiteLayout((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function updateResponsibilitiesText(value) {
+    clearReview();
+    setResponsibilitiesText(value);
+  }
+
+  function updateDocumentsText(value) {
+    clearReview();
+    setDocumentsText(value);
+  }
+
   function printDocument() {
     setPrintError('');
 
@@ -611,6 +653,12 @@ export default function ProposalPrintPage() {
 
   const timelineItems = parseTimeline(timelineText);
 
+  const customerResponsibilities = linesToOptions(
+    responsibilitiesText
+  );
+
+  const documentsRequired = linesToOptions(documentsText);
+
   return (
     <div className="print-page">
       <div className="screen-only">
@@ -629,12 +677,13 @@ export default function ProposalPrintPage() {
 
         <p className="eyebrow">SolarHues customer document</p>
 
-        <h1>Proposal preview — pages 1 to 10</h1>
+        <h1>Proposal preview — pages 1 to 12</h1>
 
         <p className="intro">
           Cover, company profiles, service capabilities, product
           range, system design, scope, equipment, commercial
-          terms, warranties, timeline and environmental impact.
+          terms, warranties, timeline, environmental impact, site
+          layout and customer responsibilities.
         </p>
 
         {waiting && (
@@ -1362,20 +1411,216 @@ export default function ProposalPrintPage() {
             </section>
 
             <section className="panel">
+              <h2>Pages 11 and 12 — Site and responsibilities</h2>
+
+              <p className="hint">
+                Enter only site-verified details. The layout is
+                indicative until the physical survey, structural
+                assessment and DISCOM requirements are complete.
+              </p>
+
+              <div className="editor-grid">
+                <div className="field">
+                  <label htmlFor="layout-roof">
+                    Roof type
+                  </label>
+
+                  <input
+                    id="layout-roof"
+                    value={siteLayout.roofType}
+                    maxLength={80}
+                    placeholder="RCC, tin sheet, elevated, etc."
+                    onChange={(event) =>
+                      updateSiteLayout(
+                        'roofType',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="layout-area">
+                    Available roof area — sq ft
+                  </label>
+
+                  <input
+                    id="layout-area"
+                    type="number"
+                    min="0"
+                    value={siteLayout.availableRoofArea}
+                    onChange={(event) =>
+                      updateSiteLayout(
+                        'availableRoofArea',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="layout-module-area">
+                    Module area
+                  </label>
+
+                  <input
+                    id="layout-module-area"
+                    value={siteLayout.moduleArea}
+                    maxLength={120}
+                    placeholder="South-facing roof, approximately 600 sq ft"
+                    onChange={(event) =>
+                      updateSiteLayout(
+                        'moduleArea',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="layout-inverter">
+                    Inverter location
+                  </label>
+
+                  <input
+                    id="layout-inverter"
+                    value={siteLayout.inverterLocation}
+                    maxLength={160}
+                    placeholder="Near main DB, shaded indoor wall"
+                    onChange={(event) =>
+                      updateSiteLayout(
+                        'inverterLocation',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="layout-cable">
+                    Cable route
+                  </label>
+
+                  <input
+                    id="layout-cable"
+                    value={siteLayout.cableRoute}
+                    maxLength={200}
+                    placeholder="Roof to inverter through existing conduit"
+                    onChange={(event) =>
+                      updateSiteLayout(
+                        'cableRoute',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="layout-earthing">
+                    Earthing location
+                  </label>
+
+                  <input
+                    id="layout-earthing"
+                    value={siteLayout.earthingLocation}
+                    maxLength={160}
+                    placeholder="Near existing earthing pit"
+                    onChange={(event) =>
+                      updateSiteLayout(
+                        'earthingLocation',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="layout-notes">
+                  Layout notes
+                </label>
+
+                <textarea
+                  id="layout-notes"
+                  rows={5}
+                  maxLength={1000}
+                  value={siteLayout.layoutNotes}
+                  placeholder="Shading, access, safety, structure or installation notes"
+                  onChange={(event) =>
+                    updateSiteLayout(
+                      'layoutNotes',
+                      event.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="responsibilities-items">
+                  Customer responsibilities — one item per line
+                </label>
+
+                <textarea
+                  id="responsibilities-items"
+                  rows={6}
+                  maxLength={1200}
+                  value={responsibilitiesText}
+                  placeholder={
+                    'Provide site access during survey and installation\n' +
+                    'Provide electricity bill and ownership documents\n' +
+                    'Coordinate DISCOM inspection where required'
+                  }
+                  onChange={(event) =>
+                    updateResponsibilitiesText(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="documents-items">
+                  Documents typically required — one item per line
+                </label>
+
+                <textarea
+                  id="documents-items"
+                  rows={6}
+                  maxLength={1200}
+                  value={documentsText}
+                  placeholder={
+                    'Recent electricity bill\n' +
+                    'Ownership or authorisation proof\n' +
+                    'Consumer number and DISCOM details\n' +
+                    'Bank details, if subsidy process requires them'
+                  }
+                  onChange={(event) =>
+                    updateDocumentsText(event.target.value)
+                  }
+                />
+              </div>
+
+              <p className="hint">
+                Do not request sensitive identity documents unless
+                they are required for the specific DISCOM or subsidy
+                process, and do not retain them longer than
+                necessary.
+              </p>
+            </section>
+
+            <section className="panel">
               <h2>Review and print</h2>
 
               <p className="warning">
                 The descriptions, logo URL, contact details,
                 service selections, product ranges, design details,
                 scope, equipment, commercial terms, warranties,
-                next steps, timeline, environmental impact and
-                savings entered here are temporary. They are not
-                saved and will be lost when you refresh or leave
-                this page.
+                next steps, timeline, environmental impact, savings,
+                site layout, responsibilities and documents entered
+                here are temporary. They are not saved and will be
+                lost when you refresh or leave this page.
               </p>
 
               <p className="hint">
-                This preview contains only the first ten pages.
+                This preview contains only the first twelve pages.
                 It is not yet the complete technical or commercial
                 proposal. Do not send it as the full offer.
               </p>
@@ -1401,7 +1646,8 @@ export default function ProposalPrintPage() {
                   descriptions, branding, service coverage, product
                   range, system design, scope, equipment list,
                   commercial terms, warranties, next steps,
-                  timeline, environmental impact and savings.
+                  timeline, environmental impact, savings, site
+                  layout, responsibilities and documents.
                 </span>
               </label>
 
@@ -1416,7 +1662,7 @@ export default function ProposalPrintPage() {
                 disabled={!reviewed || !logoUrlValid}
                 onClick={printDocument}
               >
-                Print / Save pages 1 to 10 as PDF
+                Print / Save pages 1 to 12 as PDF
               </button>
 
               <p className="hint">
@@ -1441,7 +1687,7 @@ export default function ProposalPrintPage() {
             lead={record.lead}
             partnerProfile={documentProfile}
             solarHuesAbout={solarHuesAbout}
-            totalPages={10}
+            totalPages={12}
           />
 
           <ProposalCapabilitiesPages
@@ -1449,7 +1695,7 @@ export default function ProposalPrintPage() {
             proposal={record.proposal}
             serviceCoverage={serviceCoverage}
             productRange={productRange}
-            totalPages={10}
+            totalPages={12}
           />
 
           <ProposalDesignPages
@@ -1459,7 +1705,7 @@ export default function ProposalPrintPage() {
             systemDesign={systemDesign}
             scopeItems={scopeItems}
             equipmentItems={equipmentItems}
-            totalPages={10}
+            totalPages={12}
           />
 
           <ProposalCommercialPages
@@ -1470,7 +1716,7 @@ export default function ProposalPrintPage() {
             paymentSchedule={paymentSchedule}
             warrantyItems={warrantyItems}
             nextSteps={nextSteps}
-            totalPages={10}
+            totalPages={12}
           />
 
           <ProposalTimelineImpactPages
@@ -1480,7 +1726,17 @@ export default function ProposalPrintPage() {
             timelineItems={timelineItems}
             environmental={environmental}
             savings={savings}
-            totalPages={10}
+            totalPages={12}
+          />
+
+          <ProposalSiteResponsibilityPages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            siteLayout={siteLayout}
+            customerResponsibilities={customerResponsibilities}
+            documentsRequired={documentsRequired}
+            totalPages={12}
           />
         </div>
       )}
