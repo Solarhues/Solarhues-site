@@ -563,7 +563,7 @@ router.refresh();
               <div className="success" role="status">
                 <h2>Proposal created successfully</h2>
                 <p>The proposal and its items have been saved.</p>
-                <<Link href={`${base}/${leadId}`}>
+                <Link href={`${base}/${leadId}`}>
   Return to lead details →
 </Link>
 
