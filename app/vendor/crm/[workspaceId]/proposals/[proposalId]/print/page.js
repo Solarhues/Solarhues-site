@@ -12,6 +12,7 @@ import ProposalCommercialPages from '../../../../../../../components/ProposalCom
 import ProposalTimelineImpactPages from '../../../../../../../components/ProposalTimelineImpactPages';
 import ProposalSiteResponsibilityPages from '../../../../../../../components/ProposalSiteResponsibilityPages';
 import ProposalSafetyAcceptancePages from '../../../../../../../components/ProposalSafetyAcceptancePages';
+import ProposalFaqContactPages from '../../../../../../../components/ProposalFaqContactPages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -161,6 +162,23 @@ function parseTimeline(value) {
     });
 }
 
+function parseFaqs(value) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [question, answer] = line
+        .split('|')
+        .map((part) => part.trim());
+
+      return {
+        question,
+        answer,
+      };
+    });
+}
+
 export default function ProposalPrintPage() {
   const params = useParams();
   const workspaceId = params?.workspaceId;
@@ -238,6 +256,10 @@ export default function ProposalPrintPage() {
 
   const [acceptanceNotes, setAcceptanceNotes] = useState('');
 
+  const [faqText, setFaqText] = useState('');
+
+  const [documentNotes, setDocumentNotes] = useState('');
+
   const [reviewed, setReviewed] = useState(false);
   const [printError, setPrintError] = useState('');
 
@@ -269,6 +291,8 @@ export default function ProposalPrintPage() {
     setQualityText('');
     setComplianceText('');
     setAcceptanceNotes('');
+    setFaqText('');
+    setDocumentNotes('');
 
     setReviewed(false);
     setPrintError('');
@@ -451,7 +475,7 @@ export default function ProposalPrintPage() {
 
     document.title =
       `${record.proposal.proposal_number || 'Solar Proposal'} ` +
-      '- Pages 1 to 14';
+      '- Pages 1 to 16';
 
     return () => {
       document.title = previousTitle;
@@ -600,6 +624,16 @@ export default function ProposalPrintPage() {
     setAcceptanceNotes(value);
   }
 
+  function updateFaqText(value) {
+    clearReview();
+    setFaqText(value);
+  }
+
+  function updateDocumentNotes(value) {
+    clearReview();
+    setDocumentNotes(value);
+  }
+
   function printDocument() {
     setPrintError('');
 
@@ -698,6 +732,8 @@ export default function ProposalPrintPage() {
 
   const complianceItems = linesToOptions(complianceText);
 
+  const faqs = parseFaqs(faqText);
+
   return (
     <div className="print-page">
       <div className="screen-only">
@@ -716,13 +752,14 @@ export default function ProposalPrintPage() {
 
         <p className="eyebrow">SolarHues customer document</p>
 
-        <h1>Proposal preview — pages 1 to 14</h1>
+        <h1>Proposal preview — pages 1 to 16</h1>
 
         <p className="intro">
           Cover, company profiles, service capabilities, product
           range, system design, scope, equipment, commercial
           terms, warranties, timeline, environmental impact, site
-          layout, responsibilities, safety and acceptance.
+          layout, responsibilities, safety, acceptance, FAQs and
+          contact information.
         </p>
 
         {waiting && (
@@ -1744,6 +1781,58 @@ export default function ProposalPrintPage() {
             </section>
 
             <section className="panel">
+              <h2>Pages 15 and 16 — FAQs and contact</h2>
+
+              <p className="hint">
+                Add only approved, factual answers. Do not promise
+                generation, savings, subsidy approval, financing or
+                DISCOM approval.
+              </p>
+
+              <div className="field spaced">
+                <label htmlFor="faq-items">
+                  Frequently asked questions — one item per line
+                </label>
+
+                <textarea
+                  id="faq-items"
+                  rows={8}
+                  maxLength={2000}
+                  value={faqText}
+                  placeholder={
+                    'How long does installation take? | Installation duration depends on approvals and site readiness.\n' +
+                    'Is subsidy guaranteed? | Subsidy eligibility depends on the applicable scheme and DISCOM process.'
+                  }
+                  onChange={(event) =>
+                    updateFaqText(event.target.value)
+                  }
+                />
+
+                <span className="hint">
+                  Use this format:
+                  Question | Answer
+                </span>
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="document-notes">
+                  Document notes — optional
+                </label>
+
+                <textarea
+                  id="document-notes"
+                  rows={4}
+                  maxLength={800}
+                  value={documentNotes}
+                  placeholder="Proposal version, prepared by, review instructions or other notes"
+                  onChange={(event) =>
+                    updateDocumentNotes(event.target.value)
+                  }
+                />
+              </div>
+            </section>
+
+            <section className="panel">
               <h2>Review and print</h2>
 
               <p className="warning">
@@ -1752,13 +1841,14 @@ export default function ProposalPrintPage() {
                 scope, equipment, commercial terms, warranties,
                 next steps, timeline, environmental impact, savings,
                 site layout, responsibilities, documents, safety,
-                quality, compliance and acceptance notes entered
-                here are temporary. They are not saved and will be
-                lost when you refresh or leave this page.
+                quality, compliance, acceptance notes, FAQs and
+                document notes entered here are temporary. They are
+                not saved and will be lost when you refresh or
+                leave this page.
               </p>
 
               <p className="hint">
-                This preview contains only the first fourteen pages.
+                This preview contains only the first sixteen pages.
                 It is not yet the complete technical or commercial
                 proposal. Do not send it as the full offer.
               </p>
@@ -1786,7 +1876,8 @@ export default function ProposalPrintPage() {
                   commercial terms, warranties, next steps,
                   timeline, environmental impact, savings, site
                   layout, responsibilities, documents, safety,
-                  quality, compliance and acceptance notes.
+                  quality, compliance, acceptance notes, FAQs and
+                  document notes.
                 </span>
               </label>
 
@@ -1801,7 +1892,7 @@ export default function ProposalPrintPage() {
                 disabled={!reviewed || !logoUrlValid}
                 onClick={printDocument}
               >
-                Print / Save pages 1 to 14 as PDF
+                Print / Save pages 1 to 16 as PDF
               </button>
 
               <p className="hint">
@@ -1826,7 +1917,7 @@ export default function ProposalPrintPage() {
             lead={record.lead}
             partnerProfile={documentProfile}
             solarHuesAbout={solarHuesAbout}
-            totalPages={14}
+            totalPages={16}
           />
 
           <ProposalCapabilitiesPages
@@ -1834,7 +1925,7 @@ export default function ProposalPrintPage() {
             proposal={record.proposal}
             serviceCoverage={serviceCoverage}
             productRange={productRange}
-            totalPages={14}
+            totalPages={16}
           />
 
           <ProposalDesignPages
@@ -1844,7 +1935,7 @@ export default function ProposalPrintPage() {
             systemDesign={systemDesign}
             scopeItems={scopeItems}
             equipmentItems={equipmentItems}
-            totalPages={14}
+            totalPages={16}
           />
 
           <ProposalCommercialPages
@@ -1855,7 +1946,7 @@ export default function ProposalPrintPage() {
             paymentSchedule={paymentSchedule}
             warrantyItems={warrantyItems}
             nextSteps={nextSteps}
-            totalPages={14}
+            totalPages={16}
           />
 
           <ProposalTimelineImpactPages
@@ -1865,7 +1956,7 @@ export default function ProposalPrintPage() {
             timelineItems={timelineItems}
             environmental={environmental}
             savings={savings}
-            totalPages={14}
+            totalPages={16}
           />
 
           <ProposalSiteResponsibilityPages
@@ -1875,7 +1966,7 @@ export default function ProposalPrintPage() {
             siteLayout={siteLayout}
             customerResponsibilities={customerResponsibilities}
             documentsRequired={documentsRequired}
-            totalPages={14}
+            totalPages={16}
           />
 
           <ProposalSafetyAcceptancePages
@@ -1886,7 +1977,17 @@ export default function ProposalPrintPage() {
             qualityItems={qualityItems}
             complianceItems={complianceItems}
             acceptanceNotes={acceptanceNotes}
-            totalPages={14}
+            totalPages={16}
+          />
+
+          <ProposalFaqContactPages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            partnerProfile={documentProfile}
+            faqs={faqs}
+            documentNotes={documentNotes}
+            totalPages={16}
           />
         </div>
       )}
