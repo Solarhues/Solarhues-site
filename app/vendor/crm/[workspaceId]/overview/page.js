@@ -106,98 +106,155 @@ export default function WorkspaceOverviewPage() {
           setMembership(record);
         }
 
-        const [
-          leadsResult,
-          proposalsResult,
-          followUpsResult,
-          paymentsResult,
-        ] = await Promise.all([
-          supabase
-            .from('crm_leads')
-            .select(
-              `
-              id,
-              created_at,
-              customer_name,
-              customer_phone,
-              site_city,
-              sales_stage,
-              workspace_id
-            `
-            )
-            .eq('workspace_id', currentWorkspaceId)
-            .order('created_at', { ascending: false })
-            .limit(5),
+       const [
+  leadsResult,
+  proposalsResult,
+  followUpsResult,
+  paymentsResult,
+] = await Promise.all([
+  supabase
+    .from('crm_leads')
+    .select(`
+      id,
+      created_at,
+      customer_name,
+      customer_phone:phone,
+      site_city:city,
+      sales_stage:stage,
+      workspace_id
+    `)
+    .eq('workspace_id', currentWorkspaceId)
+    .order('created_at', { ascending: false })
+    .limit(5),
 
-          supabase
-            .from('crm_proposals')
-            .select(
-              `
-              id,
-              created_at,
-              proposal_number,
-              customer_name,
-              status,
-              total_amount,
-              workspace_id
-            `
-            )
-            .eq('workspace_id', currentWorkspaceId)
-            .order('created_at', { ascending: false })
-            .limit(5),
+  supabase
+    .from('crm_proposals')
+    .select(`
+      id,
+      created_at,
+      lead_id,
+      proposal_number,
+      status,
+      total_amount:total_inr,
+      workspace_id
+    `)
+    .eq('workspace_id', currentWorkspaceId)
+    .order('created_at', { ascending: false })
+    .limit(5),
 
-          supabase
-            .from('crm_follow_ups')
-            .select(
-              `
-              id,
-              due_at,
-              status,
-              notes,
-              lead:crm_leads (
-                id,
-                customer_name,
-                workspace_id
-              )
-            `
-            )
-            .eq('workspace_id', currentWorkspaceId)
-            .order('due_at', { ascending: true })
-            .limit(5),
+  supabase
+    .from('crm_leads')
+    .select(`
+      id,
+      customer_name,
+      due_at:next_follow_up_at,
+      notes,
+      workspace_id
+    `)
+    .eq('workspace_id', currentWorkspaceId)
+    .not('next_follow_up_at', 'is', null)
+    .order('next_follow_up_at', { ascending: true })
+    .limit(5),
 
-          supabase
-            .from('crm_payment_requests')
-            .select(
-              `
-              id,
-              created_at,
-              title,
-              amount,
-              due_date,
-              status,
-              lead:crm_leads (
-                id,
-                customer_name,
-                workspace_id
-              )
-            `
-            )
-            .eq('workspace_id', currentWorkspaceId)
-            .order('created_at', { ascending: false })
-            .limit(5),
-        ]);
+  supabase
+    .from('crm_payment_requests')
+    .select(`
+      id,
+      created_at,
+      lead_id,
+      title:purpose,
+      amount:amount_inr,
+      due_date,
+      status,
+      workspace_id
+    `)
+    .eq('workspace_id', currentWorkspaceId)
+    .order('created_at', { ascending: false })
+    .limit(5),
+]);
 
-        if (leadsResult.error) throw leadsResult.error;
-        if (proposalsResult.error) throw proposalsResult.error;
-        if (followUpsResult.error) throw followUpsResult.error;
-        if (paymentsResult.error) throw paymentsResult.error;
+const queryResults = [
+  ['Leads', leadsResult],
+  ['Proposals', proposalsResult],
+  ['Follow-ups', followUpsResult],
+  ['Payment requests', paymentsResult],
+];
 
-        if (!active) return;
+for (const [label, result] of queryResults) {
+  if (result.error) {
+    throw new Error(`${label}: ${result.error.message}`);
+  }
+}
 
-        setLeads(leadsResult.data || []);
-        setProposals(proposalsResult.data || []);
-        setFollowUps(followUpsResult.data || []);
-        setPayments(paymentsResult.data || []);
+if (!active) return;
+
+// Load names for the leads referenced by proposals and payments.
+// This avoids assuming a particular foreign-key relationship name.
+const relatedLeadIds = [
+  ...new Set(
+    [
+      ...(proposalsResult.data || []).map((item) => item.lead_id),
+      ...(paymentsResult.data || []).map((item) => item.lead_id),
+    ].filter(Boolean)
+  ),
+];
+
+let relatedLeads = [];
+
+if (relatedLeadIds.length > 0) {
+  const { data: leadNames, error: leadNamesError } = await supabase
+    .from('crm_leads')
+    .select('id, customer_name')
+    .eq('workspace_id', currentWorkspaceId)
+    .in('id', relatedLeadIds);
+
+  if (leadNamesError) {
+    throw new Error(`Customer names: ${leadNamesError.message}`);
+  }
+
+  relatedLeads = leadNames || [];
+}
+
+if (!active) return;
+
+const leadsById = new Map(
+  relatedLeads.map((lead) => [lead.id, lead])
+);
+
+setLeads(leadsResult.data || []);
+
+setProposals(
+  (proposalsResult.data || []).map((item) => ({
+    ...item,
+    customer_name: leadsById.get(item.lead_id)?.customer_name || '',
+  }))
+);
+
+setFollowUps(
+  (followUpsResult.data || []).map((lead) => ({
+    id: lead.id,
+    due_at: lead.due_at,
+    status: 'Scheduled',
+    notes: lead.notes,
+    lead: {
+      id: lead.id,
+      customer_name: lead.customer_name,
+    },
+  }))
+);
+
+setPayments(
+  (paymentsResult.data || []).map((item) => ({
+    ...item,
+    lead: item.lead_id
+      ? {
+          id: item.lead_id,
+          customer_name:
+            leadsById.get(item.lead_id)?.customer_name || '',
+        }
+      : null,
+  }))
+);
       } catch (err) {
         if (active) {
           setError(
@@ -325,7 +382,7 @@ export default function WorkspaceOverviewPage() {
               className="summary-card"
             >
               <span className="summary-number">{pendingFollowUps}</span>
-              <span className="summary-label">Open follow-ups</span>
+              <span className="summary-label">Next follow-ups (up to 5)</span>
               <span className="summary-link">View follow-ups →</span>
             </Link>
 
@@ -334,7 +391,9 @@ export default function WorkspaceOverviewPage() {
               className="summary-card"
             >
               <span className="summary-number">{pendingPayments}</span>
-              <span className="summary-label">Open payments</span>
+              <span className="summary-label">
+  Open payments among latest 5
+</span>
               <span className="summary-link">View payments →</span>
             </Link>
           </section>
