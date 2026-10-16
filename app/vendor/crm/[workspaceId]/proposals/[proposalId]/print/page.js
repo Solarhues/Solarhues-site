@@ -9,6 +9,7 @@ import ProposalOpeningPages from '../../../../../../../components/ProposalOpenin
 import ProposalCapabilitiesPages from '../../../../../../../components/ProposalCapabilitiesPages';
 import ProposalDesignPages from '../../../../../../../components/ProposalDesignPages';
 import ProposalCommercialPages from '../../../../../../../components/ProposalCommercialPages';
+import ProposalTimelineImpactPages from '../../../../../../../components/ProposalTimelineImpactPages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -77,6 +78,16 @@ const EMPTY_COMMERCIAL = {
   totalIncludingGst: '',
 };
 
+const EMPTY_ENVIRONMENTAL = {
+  co2SavedKg: '',
+  treeEquivalent: '',
+};
+
+const EMPTY_SAVINGS = {
+  annualSavings: '',
+  paybackYears: '',
+};
+
 function linesToOptions(value) {
   return value
     .split('\n')
@@ -116,6 +127,24 @@ function parsePayments(value) {
         milestone,
         percentage,
         amount,
+      };
+    });
+}
+
+function parseTimeline(value) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [stage, duration, details] = line
+        .split('|')
+        .map((part) => part.trim());
+
+      return {
+        stage,
+        duration,
+        details,
       };
     });
 }
@@ -170,6 +199,16 @@ export default function ProposalPrintPage() {
 
   const [nextStepsText, setNextStepsText] = useState('');
 
+  const [timelineText, setTimelineText] = useState('');
+
+  const [environmental, setEnvironmental] = useState({
+    ...EMPTY_ENVIRONMENTAL,
+  });
+
+  const [savings, setSavings] = useState({
+    ...EMPTY_SAVINGS,
+  });
+
   const [reviewed, setReviewed] = useState(false);
   const [printError, setPrintError] = useState('');
 
@@ -191,6 +230,9 @@ export default function ProposalPrintPage() {
     setPaymentText('');
     setWarrantyText('');
     setNextStepsText('');
+    setTimelineText('');
+    setEnvironmental({ ...EMPTY_ENVIRONMENTAL });
+    setSavings({ ...EMPTY_SAVINGS });
 
     setReviewed(false);
     setPrintError('');
@@ -373,7 +415,7 @@ export default function ProposalPrintPage() {
 
     document.title =
       `${record.proposal.proposal_number || 'Solar Proposal'} ` +
-      '- Pages 1 to 8';
+      '- Pages 1 to 10';
 
     return () => {
       document.title = previousTitle;
@@ -460,6 +502,29 @@ export default function ProposalPrintPage() {
     setNextStepsText(value);
   }
 
+  function updateTimelineText(value) {
+    clearReview();
+    setTimelineText(value);
+  }
+
+  function updateEnvironmental(field, value) {
+    clearReview();
+
+    setEnvironmental((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function updateSavings(field, value) {
+    clearReview();
+
+    setSavings((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
   function printDocument() {
     setPrintError('');
 
@@ -544,6 +609,8 @@ export default function ProposalPrintPage() {
 
   const nextSteps = linesToOptions(nextStepsText);
 
+  const timelineItems = parseTimeline(timelineText);
+
   return (
     <div className="print-page">
       <div className="screen-only">
@@ -562,12 +629,12 @@ export default function ProposalPrintPage() {
 
         <p className="eyebrow">SolarHues customer document</p>
 
-        <h1>Proposal preview — pages 1 to 8</h1>
+        <h1>Proposal preview — pages 1 to 10</h1>
 
         <p className="intro">
           Cover, company profiles, service capabilities, product
           range, system design, scope, equipment, commercial
-          terms, warranties and next steps.
+          terms, warranties, timeline and environmental impact.
         </p>
 
         {waiting && (
@@ -1170,19 +1237,145 @@ export default function ProposalPrintPage() {
             </section>
 
             <section className="panel">
+              <h2>Pages 9 and 10 — Timeline and impact</h2>
+
+              <p className="hint">
+                Enter only realistic, site-specific or
+                installer-confirmed estimates. Do not present
+                generation, savings, payback or environmental
+                figures as guarantees.
+              </p>
+
+              <div className="field spaced">
+                <label htmlFor="timeline-items">
+                  Project timeline — one milestone per line
+                </label>
+
+                <textarea
+                  id="timeline-items"
+                  rows={7}
+                  maxLength={1500}
+                  value={timelineText}
+                  placeholder={
+                    'Agreement and advance | 1-2 weeks | Sign agreement and complete documentation\n' +
+                    'DISCOM application | 2-4 weeks | Submit application and follow approvals\n' +
+                    'Installation | 3-5 days | Install modules, inverter and structure\n' +
+                    'Commissioning | 1-2 days | Testing, inspection and handover'
+                  }
+                  onChange={(event) =>
+                    updateTimelineText(event.target.value)
+                  }
+                />
+
+                <span className="hint">
+                  Use this format:
+                  Milestone | Expected duration | Details
+                </span>
+              </div>
+
+              <div className="editor-grid spaced">
+                <div className="field">
+                  <label htmlFor="impact-co2">
+                    Estimated annual CO2 avoided — kg
+                  </label>
+
+                  <input
+                    id="impact-co2"
+                    type="number"
+                    min="0"
+                    value={environmental.co2SavedKg}
+                    onChange={(event) =>
+                      updateEnvironmental(
+                        'co2SavedKg',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="impact-trees">
+                    Equivalent trees per year
+                  </label>
+
+                  <input
+                    id="impact-trees"
+                    type="number"
+                    min="0"
+                    value={environmental.treeEquivalent}
+                    onChange={(event) =>
+                      updateEnvironmental(
+                        'treeEquivalent',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="savings-annual">
+                    Estimated annual bill savings — ₹
+                  </label>
+
+                  <input
+                    id="savings-annual"
+                    type="number"
+                    min="0"
+                    value={savings.annualSavings}
+                    onChange={(event) =>
+                      updateSavings(
+                        'annualSavings',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="savings-payback">
+                    Estimated payback period — years
+                  </label>
+
+                  <input
+                    id="savings-payback"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={savings.paybackYears}
+                    onChange={(event) =>
+                      updateSavings(
+                        'paybackYears',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <p className="hint">
+                These values should come from a verified calculation
+                or saved solar estimate. The proposal database
+                includes timeline and environmental-impact fields,
+                while solar estimates include CO2 avoided, tree
+                equivalent and payback period.
+              </p>
+            </section>
+
+            <section className="panel">
               <h2>Review and print</h2>
 
               <p className="warning">
                 The descriptions, logo URL, contact details,
                 service selections, product ranges, design details,
-                scope, equipment, commercial terms, warranties and
-                next steps entered here are temporary. They are not
+                scope, equipment, commercial terms, warranties,
+                next steps, timeline, environmental impact and
+                savings entered here are temporary. They are not
                 saved and will be lost when you refresh or leave
                 this page.
               </p>
 
               <p className="hint">
-                This preview contains only the first eight pages.
+                This preview contains only the first ten pages.
                 It is not yet the complete technical or commercial
                 proposal. Do not send it as the full offer.
               </p>
@@ -1207,7 +1400,8 @@ export default function ProposalPrintPage() {
                   I have reviewed the customer details, company
                   descriptions, branding, service coverage, product
                   range, system design, scope, equipment list,
-                  commercial terms, warranties and next steps.
+                  commercial terms, warranties, next steps,
+                  timeline, environmental impact and savings.
                 </span>
               </label>
 
@@ -1222,7 +1416,7 @@ export default function ProposalPrintPage() {
                 disabled={!reviewed || !logoUrlValid}
                 onClick={printDocument}
               >
-                Print / Save pages 1 to 8 as PDF
+                Print / Save pages 1 to 10 as PDF
               </button>
 
               <p className="hint">
@@ -1247,7 +1441,7 @@ export default function ProposalPrintPage() {
             lead={record.lead}
             partnerProfile={documentProfile}
             solarHuesAbout={solarHuesAbout}
-            totalPages={8}
+            totalPages={10}
           />
 
           <ProposalCapabilitiesPages
@@ -1255,7 +1449,7 @@ export default function ProposalPrintPage() {
             proposal={record.proposal}
             serviceCoverage={serviceCoverage}
             productRange={productRange}
-            totalPages={8}
+            totalPages={10}
           />
 
           <ProposalDesignPages
@@ -1265,7 +1459,7 @@ export default function ProposalPrintPage() {
             systemDesign={systemDesign}
             scopeItems={scopeItems}
             equipmentItems={equipmentItems}
-            totalPages={8}
+            totalPages={10}
           />
 
           <ProposalCommercialPages
@@ -1276,7 +1470,17 @@ export default function ProposalPrintPage() {
             paymentSchedule={paymentSchedule}
             warrantyItems={warrantyItems}
             nextSteps={nextSteps}
-            totalPages={8}
+            totalPages={10}
+          />
+
+          <ProposalTimelineImpactPages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            timelineItems={timelineItems}
+            environmental={environmental}
+            savings={savings}
+            totalPages={10}
           />
         </div>
       )}
