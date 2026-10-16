@@ -7,6 +7,7 @@ import { supabase } from '../../../../../../../lib/supabase';
 import { useAuth } from '../../../../../../providers';
 import ProposalOpeningPages from '../../../../../../../components/ProposalOpeningPages';
 import ProposalCapabilitiesPages from '../../../../../../../components/ProposalCapabilitiesPages';
+import ProposalDesignPages from '../../../../../../../components/ProposalDesignPages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -61,11 +62,37 @@ const EMPTY_PRODUCT_TEXT = {
   structures: '',
 };
 
+const EMPTY_DESIGN = {
+  roofType: '',
+  mountingStructure: '',
+  arrayConfiguration: '',
+  monthlyGeneration: '',
+  annualGeneration: '',
+};
+
 function linesToOptions(value) {
   return value
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function parseEquipment(value) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name, specification, quantity] = line
+        .split('|')
+        .map((part) => part.trim());
+
+      return {
+        name,
+        specification,
+        quantity,
+      };
+    });
 }
 
 export default function ProposalPrintPage() {
@@ -100,6 +127,14 @@ export default function ProposalPrintPage() {
     ...EMPTY_PRODUCT_TEXT,
   });
 
+  const [systemDesign, setSystemDesign] = useState({
+    ...EMPTY_DESIGN,
+  });
+
+  const [scopeText, setScopeText] = useState('');
+
+  const [equipmentText, setEquipmentText] = useState('');
+
   const [reviewed, setReviewed] = useState(false);
   const [printError, setPrintError] = useState('');
 
@@ -114,6 +149,9 @@ export default function ProposalPrintPage() {
     setSolarHuesAbout('');
     setServiceCoverage({ ...EMPTY_COVERAGE });
     setProductText({ ...EMPTY_PRODUCT_TEXT });
+    setSystemDesign({ ...EMPTY_DESIGN });
+    setScopeText('');
+    setEquipmentText('');
 
     setReviewed(false);
     setPrintError('');
@@ -269,7 +307,9 @@ export default function ProposalPrintPage() {
           );
         }
       } finally {
-        if (active) setLoadedFor(loadKey);
+        if (active) {
+          setLoadedFor(loadKey);
+        }
       }
     }
 
@@ -294,7 +334,7 @@ export default function ProposalPrintPage() {
 
     document.title =
       `${record.proposal.proposal_number || 'Solar Proposal'} ` +
-      '- Pages 1 to 4';
+      '- Pages 1 to 6';
 
     return () => {
       document.title = previousTitle;
@@ -336,6 +376,25 @@ export default function ProposalPrintPage() {
       ...previous,
       [field]: value,
     }));
+  }
+
+  function updateSystemDesign(field, value) {
+    clearReview();
+
+    setSystemDesign((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function updateScopeText(value) {
+    clearReview();
+    setScopeText(value);
+  }
+
+  function updateEquipmentText(value) {
+    clearReview();
+    setEquipmentText(value);
   }
 
   function printDocument() {
@@ -412,6 +471,10 @@ export default function ProposalPrintPage() {
     structures: linesToOptions(productText.structures),
   };
 
+  const scopeItems = linesToOptions(scopeText);
+
+  const equipmentItems = parseEquipment(equipmentText);
+
   return (
     <div className="print-page">
       <div className="screen-only">
@@ -430,12 +493,11 @@ export default function ProposalPrintPage() {
 
         <p className="eyebrow">SolarHues customer document</p>
 
-        <h1>Proposal preview — pages 1 to 4</h1>
+        <h1>Proposal preview — pages 1 to 6</h1>
 
         <p className="intro">
-          Cover, company profiles, service capabilities and
-          product range. The remaining proposal pages will be
-          added in the next steps.
+          Cover, company profiles, service capabilities, product
+          range, system design, scope of work and equipment list.
         </p>
 
         {waiting && (
@@ -741,11 +803,162 @@ export default function ProposalPrintPage() {
               </div>
 
               <p className="hint">
-                For example, structure entries may include Flush
-                mount, Roof rail, Short rail or Elevated, if those
-                options are actually offered. Leave a category
-                blank if its range is not yet confirmed.
+                Leave a category blank if its range is not yet
+                confirmed.
               </p>
+            </section>
+
+            <section className="panel">
+              <h2>Pages 5 and 6 — Design, scope and equipment</h2>
+
+              <p className="hint">
+                Enter only site-verified or installer-confirmed
+                details. Generation figures are estimates and must
+                not be presented as guaranteed output.
+              </p>
+
+              <div className="editor-grid">
+                <div className="field">
+                  <label htmlFor="design-roof">
+                    Roof type
+                  </label>
+
+                  <input
+                    id="design-roof"
+                    value={systemDesign.roofType}
+                    maxLength={80}
+                    placeholder="RCC, tin sheet, elevated, etc."
+                    onChange={(event) =>
+                      updateSystemDesign(
+                        'roofType',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="design-mounting">
+                    Mounting structure
+                  </label>
+
+                  <input
+                    id="design-mounting"
+                    value={systemDesign.mountingStructure}
+                    maxLength={120}
+                    placeholder="Flush mount, elevated structure, etc."
+                    onChange={(event) =>
+                      updateSystemDesign(
+                        'mountingStructure',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="design-array">
+                    Array configuration
+                  </label>
+
+                  <input
+                    id="design-array"
+                    value={systemDesign.arrayConfiguration}
+                    maxLength={160}
+                    placeholder="For example: 2 strings, south-facing"
+                    onChange={(event) =>
+                      updateSystemDesign(
+                        'arrayConfiguration',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="design-monthly">
+                    Estimated monthly generation — units
+                  </label>
+
+                  <input
+                    id="design-monthly"
+                    type="number"
+                    min="0"
+                    value={systemDesign.monthlyGeneration}
+                    onChange={(event) =>
+                      updateSystemDesign(
+                        'monthlyGeneration',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="design-annual">
+                    Estimated annual generation — units
+                  </label>
+
+                  <input
+                    id="design-annual"
+                    type="number"
+                    min="0"
+                    value={systemDesign.annualGeneration}
+                    onChange={(event) =>
+                      updateSystemDesign(
+                        'annualGeneration',
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="scope-items">
+                  Scope of work — one item per line
+                </label>
+
+                <textarea
+                  id="scope-items"
+                  rows={6}
+                  maxLength={1200}
+                  value={scopeText}
+                  placeholder={
+                    'Site survey\nSystem design\nSupply and installation\n' +
+                    'DISCOM coordination\nCommissioning'
+                  }
+                  onChange={(event) =>
+                    updateScopeText(event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="equipment-items">
+                  Equipment / BOM — one item per line
+                </label>
+
+                <textarea
+                  id="equipment-items"
+                  rows={8}
+                  maxLength={2000}
+                  value={equipmentText}
+                  placeholder={
+                    'Solar module | 540 Wp mono PERC | 10\n' +
+                    'Inverter | 5 kW string inverter | 1\n' +
+                    'Mounting structure | Galvanised iron | 1 lot'
+                  }
+                  onChange={(event) =>
+                    updateEquipmentText(event.target.value)
+                  }
+                />
+
+                <span className="hint">
+                  Use this format for each line:
+                  Item name | Specification or model | Quantity
+                </span>
+              </div>
             </section>
 
             <section className="panel">
@@ -753,13 +966,14 @@ export default function ProposalPrintPage() {
 
               <p className="warning">
                 The descriptions, logo URL, contact details,
-                service selections and product ranges entered
-                here are temporary. They are not saved and will
-                be lost when you refresh or leave this page.
+                service selections, product ranges, design details,
+                scope and equipment entered here are temporary.
+                They are not saved and will be lost when you
+                refresh or leave this page.
               </p>
 
               <p className="hint">
-                This preview contains only the first four pages.
+                This preview contains only the first six pages.
                 It is not yet the complete technical or commercial
                 proposal. Do not send it as the full offer.
               </p>
@@ -782,8 +996,8 @@ export default function ProposalPrintPage() {
 
                 <span>
                   I have reviewed the customer details, company
-                  descriptions, branding, service coverage and
-                  product range.
+                  descriptions, branding, service coverage, product
+                  range, system design, scope and equipment list.
                 </span>
               </label>
 
@@ -798,7 +1012,7 @@ export default function ProposalPrintPage() {
                 disabled={!reviewed || !logoUrlValid}
                 onClick={printDocument}
               >
-                Print / Save pages 1 to 4 as PDF
+                Print / Save pages 1 to 6 as PDF
               </button>
 
               <p className="hint">
@@ -823,7 +1037,7 @@ export default function ProposalPrintPage() {
             lead={record.lead}
             partnerProfile={documentProfile}
             solarHuesAbout={solarHuesAbout}
-            totalPages={4}
+            totalPages={6}
           />
 
           <ProposalCapabilitiesPages
@@ -831,7 +1045,17 @@ export default function ProposalPrintPage() {
             proposal={record.proposal}
             serviceCoverage={serviceCoverage}
             productRange={productRange}
-            totalPages={4}
+            totalPages={6}
+          />
+
+          <ProposalDesignPages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            systemDesign={systemDesign}
+            scopeItems={scopeItems}
+            equipmentItems={equipmentItems}
+            totalPages={6}
           />
         </div>
       )}
