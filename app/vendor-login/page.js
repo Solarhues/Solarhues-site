@@ -14,8 +14,10 @@ export default function VendorLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -55,12 +57,20 @@ export default function VendorLoginPage() {
     };
   }, []);
 
-  async function handleLogin(event) {
+  function changeMode(nextResetMode) {
+    setResetMode(nextResetMode);
+    setPassword('');
+    setError('');
+    setMessage('');
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (busy) return;
 
     setError('');
+    setMessage('');
 
     const cleanEmail = email.trim();
 
@@ -69,7 +79,7 @@ export default function VendorLoginPage() {
       return;
     }
 
-    if (!password) {
+    if (!resetMode && !password) {
       setError('Please enter your password.');
       return;
     }
@@ -77,19 +87,40 @@ export default function VendorLoginPage() {
     setBusy(true);
 
     try {
-      const { error: loginError } =
-        await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
+      if (resetMode) {
+        const { error: resetError } =
+          await supabase.auth.resetPasswordForEmail(cleanEmail, {
+            redirectTo:
+              `${window.location.origin}/vendor-reset-password`,
+          });
 
-      if (loginError) throw loginError;
+        if (resetError) throw resetError;
 
-      setPassword('');
-      router.replace('/vendor/crm');
-      router.refresh();
+        setMessage(
+          'If an account exists for this email, a password-reset ' +
+          'message will be sent. Check your inbox and spam folder. ' +
+          'Use the newest email only.'
+        );
+      } else {
+        const { error: loginError } =
+          await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+
+        if (loginError) throw loginError;
+
+        setPassword('');
+        router.replace('/vendor/crm');
+        router.refresh();
+      }
     } catch (err) {
-      setError(err.message || 'Unable to sign in. Please try again.');
+      setError(
+        err.message ||
+        (resetMode
+          ? 'Could not send the reset email. Please try again.'
+          : 'Unable to sign in. Please try again.')
+      );
     } finally {
       setBusy(false);
     }
@@ -100,9 +131,11 @@ export default function VendorLoginPage() {
 
     setBusy(true);
     setError('');
+    setMessage('');
 
     try {
-      const { error: logoutError } = await supabase.auth.signOut();
+      const { error: logoutError } =
+        await supabase.auth.signOut();
 
       if (logoutError) throw logoutError;
 
@@ -117,62 +150,61 @@ export default function VendorLoginPage() {
   }
 
   return (
-    <main className="vendor-login-page">
+    <main className="login-page">
       <div className="container">
         <nav className="navigation" aria-label="Main navigation">
           <Logo />
-
-          <Link href="/vendor-apply" className="outline-link">
-            Become an installer
-          </Link>
+          <Link href="/vendor-apply">Become an installer →</Link>
         </nav>
 
-        <div className="login-layout">
+        <div className="layout">
           <section className="introduction">
             <p className="eyebrow">SolarHues installer portal</p>
-
             <h1>Your solar business, in one place.</h1>
 
             <p className="description">
-              Sign in to your installer account to manage your workspace,
-              follow up with customers, prepare proposals, and track
-              payment requests.
+              Manage your workspace, follow up with customers,
+              prepare proposals, and track payment requests.
             </p>
 
-            <ul className="features">
+            <ul>
               <li>Manage leads and customer details</li>
               <li>Track scheduled follow-ups</li>
               <li>Create itemized solar proposals</li>
               <li>Organize customer payment requests</li>
             </ul>
 
-            <p className="access-note">
-              Workspace access depends on your assigned membership and
-              permissions. Signing in does not automatically approve an
-              installer application.
+            <p className="hint">
+              Workspace access depends on your assigned membership
+              and permissions. Signing in does not automatically
+              approve an installer application.
             </p>
           </section>
 
-          <section className="login-card" aria-labelledby="login-heading">
-            <p className="eyebrow">Welcome back</p>
-            <h2 id="login-heading">Installer login</h2>
+          <section className="card" aria-labelledby="login-heading">
+            <p className="eyebrow">
+              {resetMode ? 'Account recovery' : 'Welcome back'}
+            </p>
+
+            <h2 id="login-heading">
+              {resetMode ? 'Reset your password' : 'Installer login'}
+            </h2>
 
             {error && (
-              <div className="error" role="alert">
-                {error}
-              </div>
+              <div className="error" role="alert">{error}</div>
+            )}
+
+            {message && (
+              <div className="success" role="status">{message}</div>
             )}
 
             {checking ? (
-              <p className="muted" role="status">
+              <p className="hint" role="status">
                 Checking your session…
               </p>
-            ) : signedInEmail ? (
-              <div>
-                <p className="muted">
-                  You are signed in as:
-                </p>
-
+            ) : signedInEmail && !resetMode ? (
+              <>
+                <p className="hint">You are signed in as:</p>
                 <p className="account-email">{signedInEmail}</p>
 
                 <Link href="/vendor/crm" className="primary-link">
@@ -181,29 +213,41 @@ export default function VendorLoginPage() {
 
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="secondary"
                   disabled={busy}
                   onClick={handleLogout}
                 >
                   {busy ? 'Signing out…' : 'Use a different account'}
                 </button>
-              </div>
+
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    setEmail(signedInEmail);
+                    changeMode(true);
+                  }}
+                >
+                  Reset password by email
+                </button>
+              </>
             ) : (
               <>
-                <p className="muted">
-                  Use the email and password for your existing account.
+                <p className="hint">
+                  {resetMode
+                    ? 'Enter your account email to request a recovery link.'
+                    : 'Use the email and password for your existing account.'}
                 </p>
 
-                <form onSubmit={handleLogin}>
+                <form onSubmit={handleSubmit}>
                   <fieldset disabled={busy}>
                     <div className="field">
                       <label htmlFor="installer-email">
                         Email address
                       </label>
-
                       <input
                         id="installer-email"
-                        name="email"
                         type="email"
                         autoComplete="username"
                         placeholder="you@company.com"
@@ -216,57 +260,74 @@ export default function VendorLoginPage() {
                       />
                     </div>
 
-                    <div className="field">
-                      <label htmlFor="installer-password">
-                        Password
-                      </label>
+                    {!resetMode && (
+                      <>
+                        <div className="field">
+                          <label htmlFor="installer-password">
+                            Password
+                          </label>
+                          <input
+                            id="installer-password"
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            value={password}
+                            required
+                            onChange={(event) =>
+                              setPassword(event.target.value)
+                            }
+                          />
+                        </div>
 
-                      <input
-                        id="installer-password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        autoComplete="current-password"
-                        value={password}
-                        required
-                        onChange={(event) =>
-                          setPassword(event.target.value)
-                        }
-                      />
-                    </div>
+                        <label className="toggle">
+                          <input
+                            type="checkbox"
+                            checked={showPassword}
+                            onChange={(event) =>
+                              setShowPassword(event.target.checked)
+                            }
+                          />
+                          Show password
+                        </label>
+                      </>
+                    )}
 
-                    <label className="password-toggle">
-                      <input
-                        type="checkbox"
-                        checked={showPassword}
-                        onChange={(event) =>
-                          setShowPassword(event.target.checked)
-                        }
-                      />
-                      Show password
-                    </label>
-
-                    <button type="submit" className="submit-button">
-                      {busy ? 'Signing in…' : 'Sign in'}
+                    <button type="submit" className="submit">
+                      {busy
+                        ? resetMode
+                          ? 'Sending…'
+                          : 'Signing in…'
+                        : resetMode
+                          ? 'Send password-reset email'
+                          : 'Sign in'}
                     </button>
                   </fieldset>
                 </form>
 
-                <p className="help-note">
-                  If your account was created using email links only,
-                  you may not have a password yet. Use your existing
-                  email-link login method instead.
-                </p>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => changeMode(!resetMode)}
+                >
+                  {resetMode
+                    ? '← Back to login'
+                    : 'Forgot password?'}
+                </button>
 
-                <Link href="/login" className="text-link">
-                  Open existing email-link login
-                </Link>
+                {!resetMode && (
+                  <p className="hint">
+                    Previously used email links?{' '}
+                    <Link href="/login">
+                      Open existing email-link login
+                    </Link>
+                  </p>
+                )}
               </>
             )}
 
             <div className="application-prompt">
-              <p>New to SolarHues?</p>
-
-              <Link href="/vendor-apply/form" className="text-link">
+              <p className="hint">New to SolarHues?</p>
+              <Link href="/vendor-apply/form">
                 Apply as an installer →
               </Link>
             </div>
@@ -281,273 +342,146 @@ export default function VendorLoginPage() {
       </div>
 
       <style jsx>{`
-        .vendor-login-page {
+        .login-page {
           min-height: 100vh;
-          width: 100%;
-          overflow-x: hidden;
           color: #f8fafc;
           background:
             radial-gradient(
               circle at top left,
-              rgba(250, 204, 21, 0.18),
-              transparent 35%
-            ),
-            radial-gradient(
-              circle at bottom right,
-              rgba(5, 150, 105, 0.2),
-              transparent 42%
+              rgba(250, 204, 21, 0.15),
+              transparent 40%
             ),
             #1e293b;
           font-family: Arial, sans-serif;
         }
-
         .container {
           width: min(1120px, calc(100% - 32px));
-          margin: 0 auto;
+          margin: auto;
         }
-
-        .navigation {
+        .navigation,
+        footer {
           display: flex;
-          align-items: center;
           justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 16px;
-          padding: 22px 0;
-        }
-
-        .navigation :global(.outline-link) {
-          display: inline-flex;
           align-items: center;
-          justify-content: center;
-          padding: 10px 16px;
-          border: 1px solid rgba(250, 204, 21, 0.7);
-          border-radius: 999px;
+          flex-wrap: wrap;
+          gap: 20px;
+          padding: 24px 0;
+        }
+        .login-page :global(a) {
           color: #facc15;
-          font-weight: 700;
           text-decoration: none;
         }
-
-        .login-layout {
+        .layout {
           display: grid;
-          grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-          align-items: start;
+          grid-template-columns: 1.1fr 0.9fr;
           gap: 48px;
-          padding: 58px 0 70px;
+          padding: 50px 0 70px;
+          align-items: start;
         }
-
-        .introduction {
-          padding-top: 20px;
-          min-width: 0;
-        }
-
+        .introduction,
+        .card { min-width: 0; }
         .eyebrow {
-          margin: 0 0 12px;
           color: #facc15;
           font-size: 12px;
           font-weight: 800;
           letter-spacing: 0.12em;
           text-transform: uppercase;
         }
-
         h1 {
           margin: 0;
           font-size: clamp(36px, 5vw, 62px);
-          line-height: 1.08;
-          letter-spacing: -0.04em;
+          line-height: 1.1;
         }
-
-        h2 {
-          margin: 0 0 16px;
-          font-size: 28px;
-        }
-
-        .description {
-          margin: 24px 0;
-          color: #cbd5e1;
-          line-height: 1.75;
-          font-size: 17px;
-        }
-
-        .features {
-          display: grid;
-          gap: 14px;
-          padding-left: 22px;
-          color: #e2e8f0;
-          line-height: 1.5;
-        }
-
-        .access-note,
-        .help-note {
-          margin-top: 24px;
+        h2 { margin: 0 0 18px; font-size: 28px; }
+        .description,
+        ul { color: #cbd5e1; line-height: 1.8; }
+        li { margin-bottom: 10px; }
+        .hint {
           color: #94a3b8;
           font-size: 13px;
           line-height: 1.7;
         }
-
-        .login-card {
-          min-width: 0;
+        .card {
           padding: 30px;
-          border: 1px solid rgba(148, 163, 184, 0.22);
-          border-radius: 24px;
-          background: rgba(15, 23, 42, 0.88);
-          box-shadow: 0 20px 55px rgba(2, 6, 23, 0.25);
+          background: #0f172a;
+          border: 1px solid #334155;
+          border-radius: 22px;
         }
-
-        .muted {
-          color: #94a3b8;
-          font-size: 14px;
-          line-height: 1.65;
-        }
-
-        fieldset {
-          min-width: 0;
-          margin: 0;
-          padding: 0;
-          border: 0;
-        }
-
-        .field {
-          display: grid;
-          gap: 8px;
-          margin-top: 20px;
-        }
-
-        .field label {
-          color: #cbd5e1;
-          font-size: 14px;
-          font-weight: 700;
-        }
-
+        fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+        .field { display: grid; gap: 8px; margin-top: 20px; }
+        label { font-size: 14px; color: #cbd5e1; }
         .field input {
           box-sizing: border-box;
           width: 100%;
           min-width: 0;
-          padding: 13px 14px;
+          padding: 13px;
           border: 1px solid #64748b;
           border-radius: 10px;
           background: #1e293b;
           color: #fff;
           font: inherit;
         }
-
         .field input:focus {
           outline: 2px solid #facc15;
           outline-offset: 2px;
         }
-
-        .password-toggle {
+        .toggle {
           display: flex;
           align-items: center;
           gap: 8px;
           margin: 16px 0;
-          color: #cbd5e1;
-          font-size: 13px;
-          cursor: pointer;
         }
-
-        .password-toggle input {
-          width: 16px;
-          height: 16px;
-          accent-color: #facc15;
-        }
-
-        .submit-button,
-        .login-card :global(.primary-link) {
+        button,
+        .card :global(a.primary-link) {
           box-sizing: border-box;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: block;
           width: 100%;
-          min-height: 48px;
-          padding: 13px 18px;
+          padding: 13px 16px;
           border: 0;
           border-radius: 10px;
           background: #facc15;
           color: #1e293b;
           font: inherit;
-          font-weight: 800;
-          text-decoration: none;
+          font-weight: 700;
+          text-align: center;
           cursor: pointer;
         }
-
-        .secondary-button {
-          width: 100%;
+        .submit { margin-top: 20px; }
+        button.secondary {
           margin-top: 12px;
-          padding: 12px;
-          border: 1px solid #64748b;
-          border-radius: 10px;
           background: transparent;
+          border: 1px solid #64748b;
           color: #cbd5e1;
-          font: inherit;
-          cursor: pointer;
         }
-
-        button:disabled {
-          opacity: 0.6;
-          cursor: wait;
+        button.text-button {
+          margin-top: 14px;
+          background: transparent;
+          color: #facc15;
+          text-decoration: underline;
+          font-size: 14px;
         }
-
-        .error {
+        button:disabled { opacity: 0.6; cursor: wait; }
+        .error,
+        .success {
           margin: 16px 0;
-          padding: 12px 14px;
-          border: 1px solid #b91c1c;
+          padding: 14px;
           border-radius: 10px;
-          background: rgba(127, 29, 29, 0.25);
-          color: #fecaca;
           font-size: 14px;
           line-height: 1.6;
-        }
-
-        .account-email {
-          margin-bottom: 24px;
           overflow-wrap: anywhere;
-          color: #e2e8f0;
-          font-weight: 700;
         }
-
-        .login-card :global(.text-link) {
-          color: #facc15;
-          font-size: 14px;
-          font-weight: 700;
-          text-decoration: underline;
-          text-underline-offset: 4px;
-        }
-
+        .error { background: #451a1a; color: #fecaca; }
+        .success { background: #064e3b; color: #a7f3d0; }
+        .account-email { overflow-wrap: anywhere; }
         .application-prompt {
-          margin-top: 26px;
-          padding-top: 22px;
+          margin-top: 24px;
+          padding-top: 18px;
           border-top: 1px solid #334155;
         }
-
-        .application-prompt p {
-          color: #94a3b8;
-          font-size: 14px;
-        }
-
-        footer {
-          display: flex;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 24px;
-          padding: 20px 0 32px;
-        }
-
-        footer :global(a) {
-          color: #94a3b8;
-          font-size: 13px;
-          text-decoration: none;
-        }
-
+        footer { justify-content: center; }
         @media (max-width: 800px) {
-          .login-layout {
-            grid-template-columns: 1fr;
-            gap: 28px;
-            padding: 24px 0 40px;
-          }
-
-          .login-card {
-            padding: 24px;
-          }
+          .layout { grid-template-columns: 1fr; padding-top: 20px; }
+          .card { padding: 24px; }
         }
       `}</style>
     </main>
