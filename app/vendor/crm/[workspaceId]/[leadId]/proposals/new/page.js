@@ -460,7 +460,9 @@ export default function CreateProposalPage() {
 
       setCreatedProposalId(proposalId);
 
-      router.push(`${base}/proposals/${proposalId}`);
+router.push(`${base}/${leadId}`);
+router.refresh();
+
     } catch (err) {
       if (err.code === '23505') {
         setError(
@@ -561,11 +563,10 @@ export default function CreateProposalPage() {
               <div className="success" role="status">
                 <h2>Proposal created successfully</h2>
                 <p>The proposal and its items have been saved.</p>
-                <Link
-                  href={`${base}/proposals/${createdProposalId}`}
-                >
-                  Open proposal →
-                </Link>
+                <<Link href={`${base}/${leadId}`}>
+  Return to lead details →
+</Link>
+
               </div>
             ) : (
               <form onSubmit={saveProposal} noValidate>
