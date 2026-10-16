@@ -1,48 +1,121 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '../../../../../../../lib/supabase';
 import { useAuth } from '../../../../../../providers';
 import Logo from '../../../../../../../components/Logo';
 
-const EMPTY_ITEM = {
-  item_type: 'panel',
-  description: '',
-  quantity: '1',
-  unit: 'unit',
-  unit_price_inr: '',
+const ITEM_TYPES = [
+  ['panel', 'Panel'],
+  ['inverter', 'Inverter'],
+  ['mounting', 'Mounting'],
+  ['installation', 'Installation'],
+  ['other', 'Other'],
+];
+
+const EMPTY_FORM = {
+  proposal_number: '',
+  system_capacity_kwp: '',
+  estimated_monthly_generation_kwh: '',
+  estimated_monthly_savings_inr: '',
+  discount_inr: '',
+  subsidy_inr: '',
+  valid_until: '',
+  notes: '',
 };
 
+const DETAIL_FIELDS = [
+  ['proposal_number', 'Proposal number *', 'text'],
+  ['valid_until', 'Valid until', 'date'],
+  ['system_capacity_kwp', 'System capacity (kWp)', 'number'],
+  [
+    'estimated_monthly_generation_kwh',
+    'Estimated monthly generation (kWh)',
+    'number',
+  ],
+  [
+    'estimated_monthly_savings_inr',
+    'Estimated monthly savings (₹)',
+    'number',
+  ],
+];
+
+function newItem(key) {
+  return {
+    key,
+    item_type: 'panel',
+    description: '',
+    quantity: '1',
+    unit: 'unit',
+    unit_price_inr: '',
+  };
+}
+
+function roundMoney(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function numericValue(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function itemAmount(item) {
+  return roundMoney(
+    numericValue(item.quantity) *
+      roundMoney(numericValue(item.unit_price_inr))
+  );
+}
+
+function formatMoney(value) {
+  if (!Number.isFinite(value)) return '—';
+
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function generateProposalNumber() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+
+  return `SH-${now.getFullYear()}${month}-${suffix}`;
+}
+
 export default function CreateProposalPage() {
-  const { workspaceId, leadId } = useParams();
+  const params = useParams();
+  const workspaceId = params?.workspaceId;
+  const leadId = params?.leadId;
+
   const router = useRouter();
   const { user, loading } = useAuth();
+  const userId = user?.id;
+
+  const loadKey = `${userId || ''}:${workspaceId || ''}:${leadId || ''}`;
+  const base = `/vendor/crm/${workspaceId}`;
 
   const [workspace, setWorkspace] = useState(null);
   const [lead, setLead] = useState(null);
   const [canWrite, setCanWrite] = useState(false);
   const [loadedFor, setLoadedFor] = useState('');
   const [accessError, setAccessError] = useState('');
+  const [contextRetry, setContextRetry] = useState(0);
 
-  const [proposalNumber, setProposalNumber] = useState('');
-  const [systemCapacityKwp, setSystemCapacityKwp] = useState('');
-  const [estimatedGeneration, setEstimatedGeneration] = useState('');
-  const [estimatedSavings, setEstimatedSavings] = useState('');
-  const [discount, setDiscount] = useState('');
-  const [subsidy, setSubsidy] = useState('');
-  const [validUntil, setValidUntil] = useState('');
-  const [notes, setNotes] = useState('');
-
-  const [items, setItems] = useState([
-    { ...EMPTY_ITEM },
-  ]);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [items, setItems] = useState([newItem(0)]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [createdProposalId, setCreatedProposalId] = useState(null);
 
-  const loadKey = `${user?.id || ''}:${workspaceId || ''}`;
+  const nextItemKey = useRef(1);
+  const saveLock = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -52,8 +125,13 @@ export default function CreateProposalPage() {
     setCanWrite(false);
     setLoadedFor('');
     setAccessError('');
+    setError('');
+    setCreatedProposalId(null);
+    setForm({ ...EMPTY_FORM });
+    setItems([newItem(0)]);
+    nextItemKey.current = 1;
 
-    if (!user?.id || !workspaceId || !leadId) {
+    if (loading || !userId || !workspaceId || !leadId) {
       return () => {
         active = false;
       };
@@ -61,49 +139,44 @@ export default function CreateProposalPage() {
 
     async function loadContext() {
       try {
-        const [workspaceResult, memberResult, profileResult, leadResult] =
-          await Promise.all([
-            supabase
-              .from('crm_workspaces')
-              .select('id, company_name, status, access_expires_at')
-              .eq('id', workspaceId)
-              .maybeSingle(),
+        const [
+          workspaceResult,
+          memberResult,
+          profileResult,
+          leadResult,
+        ] = await Promise.all([
+          supabase
+            .from('crm_workspaces')
+            .select('id, company_name, status, access_expires_at')
+            .eq('id', workspaceId)
+            .maybeSingle(),
 
-            supabase
-              .from('crm_workspace_members')
-              .select('member_role, is_active')
-              .eq('workspace_id', workspaceId)
-              .eq('user_id', user.id)
-              .maybeSingle(),
+          supabase
+            .from('crm_workspace_members')
+            .select('member_role, is_active')
+            .eq('workspace_id', workspaceId)
+            .eq('user_id', userId)
+            .maybeSingle(),
 
-            supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', user.id)
-              .maybeSingle(),
+          supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle(),
 
-            supabase
-              .from('crm_leads')
-              .select(
-                `
-                id,
-                workspace_id,
-                customer_name,
-                phone,
-                email,
-                city,
-                state,
-                building_type,
-                roof_type,
-                monthly_bill_inr,
-                usable_roof_area_m2,
-                tentative_capacity_kwp
-              `
-              )
-              .eq('id', leadId)
-              .eq('workspace_id', workspaceId)
-              .maybeSingle(),
-          ]);
+          supabase
+            .from('crm_leads')
+            .select(`
+              id,
+              workspace_id,
+              customer_name,
+              city,
+              tentative_capacity_kwp
+            `)
+            .eq('id', leadId)
+            .eq('workspace_id', workspaceId)
+            .maybeSingle(),
+        ]);
 
         const queryError =
           workspaceResult.error ||
@@ -112,19 +185,19 @@ export default function CreateProposalPage() {
           leadResult.error;
 
         if (queryError) throw queryError;
-        if (!active) return;
 
         const company = workspaceResult.data;
         const member = memberResult.data;
-        const isAdmin = profileResult.data?.role === 'admin';
         const leadData = leadResult.data;
+        const isAdmin = profileResult.data?.role === 'admin';
 
         const available =
           company &&
           company.status === 'active' &&
           (
             !company.access_expires_at ||
-            new Date(company.access_expires_at).getTime() > Date.now()
+            new Date(company.access_expires_at).getTime() >
+              Date.now()
           );
 
         if (!available) {
@@ -141,24 +214,22 @@ export default function CreateProposalPage() {
           member?.is_active &&
           ['owner', 'sales'].includes(member.member_role);
 
+        const number = generateProposalNumber();
+
+        if (!active) return;
+
         setWorkspace(company);
         setLead(leadData);
         setCanWrite(Boolean(isAdmin || memberCanWrite));
 
-        if (leadData.tentative_capacity_kwp) {
-          setSystemCapacityKwp(
-            String(leadData.tentative_capacity_kwp)
-          );
-        }
-
-        const now = new Date();
-        const proposalNumber = `SH-${now.getFullYear()}${String(
-          now.getMonth() + 1
-        ).padStart(2, '0')}-${Date.now()
-          .toString()
-          .slice(-6)}`;
-
-        setProposalNumber(proposalNumber);
+        setForm({
+          ...EMPTY_FORM,
+          proposal_number: number,
+          system_capacity_kwp:
+            leadData.tentative_capacity_kwp == null
+              ? ''
+              : String(leadData.tentative_capacity_kwp),
+        });
       } catch (err) {
         if (active) {
           setAccessError(
@@ -175,114 +246,149 @@ export default function CreateProposalPage() {
     return () => {
       active = false;
     };
-  }, [user?.id, workspaceId, leadId, loadKey]);
+  }, [
+    userId,
+    loading,
+    workspaceId,
+    leadId,
+    loadKey,
+    contextRetry,
+  ]);
 
-  function updateItem(index, field, value) {
+  function updateForm(field, value) {
+    setError('');
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function updateItem(key, field, value) {
+    setError('');
     setItems((previous) =>
-      previous.map((item, itemIndex) =>
-        itemIndex === index
-          ? { ...item, [field]: value }
-          : item
+      previous.map((item) =>
+        item.key === key ? { ...item, [field]: value } : item
       )
     );
   }
 
   function addItem() {
-    setItems((previous) => [
-      ...previous,
-      { ...EMPTY_ITEM },
-    ]);
+    if (items.length >= 100) return;
+
+    const key = nextItemKey.current;
+    nextItemKey.current += 1;
+
+    setError('');
+    setItems((previous) => [...previous, newItem(key)]);
   }
 
-  function removeItem(index) {
+  function removeItem(key) {
+    setError('');
     setItems((previous) =>
-      previous.length === 1
+      previous.length <= 1
         ? previous
-        : previous.filter((_, itemIndex) => itemIndex !== index)
+        : previous.filter((item) => item.key !== key)
     );
   }
 
-  const calculatedSubtotal = items.reduce((total, item) => {
-    const quantity = Number(item.quantity) || 0;
-    const unitPrice = Number(item.unit_price_inr) || 0;
-
-    return total + quantity * unitPrice;
-  }, 0);
-
-  const calculatedTotal = Math.max(
-    0,
-    calculatedSubtotal -
-      (Number(discount) || 0) -
-      (Number(subsidy) || 0)
+  const subtotal = roundMoney(
+    items.reduce((total, item) => total + itemAmount(item), 0)
   );
 
+  const discount = roundMoney(numericValue(form.discount_inr));
+  const subsidy = roundMoney(numericValue(form.subsidy_inr));
+  const total = roundMoney(subtotal - discount - subsidy);
+
   function validate() {
-    if (!proposalNumber.trim()) {
+    if (!form.proposal_number.trim()) {
       return 'Please enter a proposal number.';
     }
 
-    if (
-      systemCapacityKwp !== '' &&
-      (!Number.isFinite(Number(systemCapacityKwp)) ||
-        Number(systemCapacityKwp) <= 0)
-    ) {
-      return 'System capacity must be a positive number.';
+    const numberChecks = [
+      ['system_capacity_kwp', 'System capacity', true],
+      [
+        'estimated_monthly_generation_kwh',
+        'Estimated monthly generation',
+        false,
+      ],
+      [
+        'estimated_monthly_savings_inr',
+        'Estimated monthly savings',
+        false,
+      ],
+      ['discount_inr', 'Discount', false],
+      ['subsidy_inr', 'Subsidy', false],
+    ];
+
+    for (const [field, label, positiveOnly] of numberChecks) {
+      const raw = form[field].trim();
+
+      if (raw === '') continue;
+
+      const value = Number(raw);
+
+      if (
+        !Number.isFinite(value) ||
+        (positiveOnly ? value <= 0 : value < 0)
+      ) {
+        return `${label} must be a valid ${
+          positiveOnly ? 'positive' : 'nonnegative'
+        } number.`;
+      }
     }
 
     if (
-      estimatedGeneration !== '' &&
-      (!Number.isFinite(Number(estimatedGeneration)) ||
-        Number(estimatedGeneration) < 0)
+      form.valid_until &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(form.valid_until)
     ) {
-      return 'Estimated monthly generation cannot be negative.';
+      return 'Please enter a valid expiry date.';
     }
 
-    if (
-      estimatedSavings !== '' &&
-      (!Number.isFinite(Number(estimatedSavings)) ||
-        Number(estimatedSavings) < 0)
-    ) {
-      return 'Estimated monthly savings cannot be negative.';
-    }
-
-    if (items.length === 0) {
-      return 'Add at least one proposal item.';
+    if (items.length < 1 || items.length > 100) {
+      return 'A proposal must contain between 1 and 100 items.';
     }
 
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index];
+      const label = `Item ${index + 1}`;
+
+      if (!ITEM_TYPES.some(([value]) => value === item.item_type)) {
+        return `${label}: please select a valid item type.`;
+      }
 
       if (!item.description.trim()) {
-        return `Please enter a description for item ${index + 1}.`;
+        return `${label}: please enter a description.`;
       }
 
-      const quantity = Number(item.quantity);
-      const unitPrice = Number(item.unit_price_inr);
-
-      if (!Number.isFinite(quantity) || quantity <= 0) {
-        return `Quantity for item ${index + 1} must be greater than zero.`;
+      if (
+        !item.quantity.trim() ||
+        !Number.isFinite(Number(item.quantity)) ||
+        Number(item.quantity) <= 0
+      ) {
+        return `${label}: quantity must be greater than zero.`;
       }
 
-      if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-        return `Unit price for item ${index + 1} cannot be negative.`;
+      if (!item.unit_price_inr.trim()) {
+        return `${label}: enter a unit price. Enter 0 only if intentional.`;
+      }
+
+      if (
+        !Number.isFinite(Number(item.unit_price_inr)) ||
+        Number(item.unit_price_inr) < 0
+      ) {
+        return `${label}: unit price must be nonnegative.`;
+      }
+
+      if (!Number.isFinite(itemAmount(item))) {
+        return `${label}: the calculated amount is too large.`;
       }
     }
 
-    if (
-      discount !== '' &&
-      (!Number.isFinite(Number(discount)) || Number(discount) < 0)
-    ) {
-      return 'Discount cannot be negative.';
+    if (!Number.isFinite(subtotal) || !Number.isFinite(total)) {
+      return 'The calculated proposal amount is invalid.';
     }
 
-    if (
-      subsidy !== '' &&
-      (!Number.isFinite(Number(subsidy)) || Number(subsidy) < 0)
-    ) {
-      return 'Subsidy cannot be negative.';
-    }
-
-    if (calculatedTotal < 0) {
+    if (total < 0) {
       return 'Discount and subsidy cannot exceed the subtotal.';
     }
 
@@ -292,11 +398,17 @@ export default function CreateProposalPage() {
   async function saveProposal(event) {
     event.preventDefault();
 
-    if (saving) return;
+    if (saveLock.current || createdProposalId) return;
 
     setError('');
 
-    if (!user || !workspace || !lead || !canWrite) {
+    if (
+      !userId ||
+      !workspace ||
+      !lead ||
+      !canWrite ||
+      loadedFor !== loadKey
+    ) {
       setError('Your account cannot create proposals for this lead.');
       return;
     }
@@ -308,93 +420,98 @@ export default function CreateProposalPage() {
       return;
     }
 
+    saveLock.current = true;
     setSaving(true);
 
     try {
-      const subtotal = calculatedSubtotal;
-      const total = calculatedTotal;
+      const { data: proposalId, error: rpcError } =
+        await supabase.rpc('crm_create_proposal_with_items', {
+          p_workspace_id: workspace.id,
+          p_lead_id: lead.id,
+          p_proposal: {
+            proposal_number: form.proposal_number.trim(),
+            system_capacity_kwp:
+              form.system_capacity_kwp.trim() || null,
+            estimated_monthly_generation_kwh:
+              form.estimated_monthly_generation_kwh.trim() || null,
+            estimated_monthly_savings_inr:
+              form.estimated_monthly_savings_inr.trim() || null,
+            discount_inr: form.discount_inr.trim() || '0',
+            subsidy_inr: form.subsidy_inr.trim() || '0',
+            valid_until: form.valid_until || null,
+            notes: form.notes.trim() || null,
+          },
+          p_items: items.map((item) => ({
+            item_type: item.item_type,
+            description: item.description.trim(),
+            quantity: item.quantity.trim(),
+            unit: item.unit.trim() || 'unit',
+            unit_price_inr: item.unit_price_inr.trim(),
+          })),
+        });
 
-      const { data: proposal, error: proposalError } = await supabase
-        .from('crm_proposals')
-        .insert({
-          workspace_id: workspace.id,
-          lead_id: lead.id,
-          proposal_number: proposalNumber.trim(),
-          status: 'draft',
-          system_capacity_kwp:
-            systemCapacityKwp === ''
-              ? null
-              : Number(systemCapacityKwp),
-          estimated_monthly_generation_kwh:
-            estimatedGeneration === ''
-              ? null
-              : Number(estimatedGeneration),
-          estimated_monthly_savings_inr:
-            estimatedSavings === ''
-              ? null
-              : Number(estimatedSavings),
-          subtotal_inr: subtotal,
-          discount_inr: discount === '' ? 0 : Number(discount),
-          subsidy_inr: subsidy === '' ? 0 : Number(subsidy),
-          total_inr: total,
-          notes: notes.trim() || null,
-          valid_until: validUntil || null,
-          created_by: user.id,
-        })
-        .select('id')
-        .single();
+      if (rpcError) throw rpcError;
 
-      if (proposalError) throw proposalError;
+      if (!proposalId || typeof proposalId !== 'string') {
+        throw new Error(
+          'The save returned no proposal ID. Check the proposal list before trying again.'
+        );
+      }
 
-      const itemRows = items.map((item, index) => ({
-        proposal_id: proposal.id,
-        item_type: item.item_type,
-        description: item.description.trim(),
-        quantity: Number(item.quantity),
-        unit: item.unit.trim() || 'unit',
-        unit_price_inr: Number(item.unit_price_inr),
-        amount_inr:
-          Number(item.quantity) * Number(item.unit_price_inr),
-        display_order: index,
-      }));
+      setCreatedProposalId(proposalId);
 
-      const { error: itemsError } = await supabase
-        .from('crm_proposal_items')
-        .insert(itemRows);
-
-      if (itemsError) throw itemsError;
-
-      router.push(
-        `/vendor/crm/${workspaceId}/${leadId}`
-      );
+      router.push(`${base}/proposals/${proposalId}`);
     } catch (err) {
-      setError(
-        err.message || 'Could not create the proposal.'
-      );
+      if (err.code === '23505') {
+        setError(
+          'That proposal number already exists in this workspace. ' +
+          'Check the proposal list first: an earlier save may have succeeded. ' +
+          'Use another number only if you intend to create a separate proposal.'
+        );
+      } else {
+        setError(
+          `${err.message || 'Could not create the proposal.'} ` +
+          'If the connection was interrupted, check the proposal list ' +
+          'for this proposal number before submitting again.'
+        );
+      }
     } finally {
+      saveLock.current = false;
       setSaving(false);
     }
   }
 
   const waiting =
-    loading || Boolean(user && loadedFor !== loadKey);
+    loading ||
+    Boolean(
+      user && workspaceId && leadId && loadedFor !== loadKey
+    );
+
+  const ready =
+    !waiting &&
+    user &&
+    loadedFor === loadKey &&
+    !accessError &&
+    workspace &&
+    lead &&
+    canWrite;
 
   return (
     <div className="proposal-page">
       <header>
         <Logo height={34} />
-        <Link href={`/vendor/crm/${workspaceId}/${leadId}`}>
-          ← Lead details
-        </Link>
+
+        <nav aria-label="Proposal navigation">
+          <Link href={`${base}/proposals`}>All proposals</Link>
+          <Link href={`${base}/${leadId}`}>← Lead details</Link>
+        </nav>
       </header>
 
       <main>
         <p className="eyebrow">Installer CRM</p>
         <h1>Create proposal</h1>
 
-        {waiting && (
-          <p role="status">Checking access…</p>
-        )}
+        {waiting && <p role="status">Checking access…</p>}
 
         {!loading && !user && (
           <div className="notice">
@@ -402,308 +519,358 @@ export default function CreateProposalPage() {
           </div>
         )}
 
-        {!waiting && user && accessError && (
+        {!loading && user && (!workspaceId || !leadId) && (
           <div className="error" role="alert">
-            {accessError}
+            Workspace or lead ID is missing. Open the proposal form
+            from a lead’s detail page.
           </div>
         )}
 
-        {!waiting && user && workspace && lead && canWrite && (
+        {!waiting && user && accessError && (
+          <div className="error" role="alert">
+            <p>{accessError}</p>
+            <button
+              type="button"
+              onClick={() => setContextRetry((value) => value + 1)}
+            >
+              Retry access check
+            </button>
+          </div>
+        )}
+
+        {!waiting &&
+          user &&
+          !accessError &&
+          workspace &&
+          lead &&
+          !canWrite && (
+            <div className="notice">
+              Only workspace owners, sales staff and SolarHues admins
+              can create proposals on this page.
+            </div>
+          )}
+
+        {ready && (
           <>
             <p className="subtitle">
-              {lead.customer_name}
+              {workspace.company_name} · {lead.customer_name}
               {lead.city ? `, ${lead.city}` : ''}
             </p>
 
-            <form onSubmit={saveProposal} noValidate>
-              {error && (
-                <div className="error" role="alert">
-                  {error}
-                </div>
-              )}
-
-              <fieldset disabled={saving}>
-                <section>
-                  <h2>Proposal details</h2>
-
-                  <div className="grid">
-                    <div className="field">
-                      <label htmlFor="proposal_number">
-                        Proposal number *
-                      </label>
-                      <input
-                        id="proposal_number"
-                        value={proposalNumber}
-                        onChange={(event) =>
-                          setProposalNumber(event.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label htmlFor="valid_until">
-                        Valid until
-                      </label>
-                      <input
-                        id="valid_until"
-                        type="date"
-                        value={validUntil}
-                        onChange={(event) =>
-                          setValidUntil(event.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label htmlFor="capacity">
-                        System capacity (kWp)
-                      </label>
-                      <input
-                        id="capacity"
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={systemCapacityKwp}
-                        onChange={(event) =>
-                          setSystemCapacityKwp(
-                            event.target.value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label htmlFor="generation">
-                        Estimated monthly generation (kWh)
-                      </label>
-                      <input
-                        id="generation"
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={estimatedGeneration}
-                        onChange={(event) =>
-                          setEstimatedGeneration(
-                            event.target.value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <div className="field">
-                      <label htmlFor="savings">
-                        Estimated monthly savings (₹)
-                      </label>
-                      <input
-                        id="savings"
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={estimatedSavings}
-                        onChange={(event) =>
-                          setEstimatedSavings(
-                            event.target.value
-                          )
-                        }
-                      />
-                    </div>
+            {createdProposalId ? (
+              <div className="success" role="status">
+                <h2>Proposal created successfully</h2>
+                <p>The proposal and its items have been saved.</p>
+                <Link
+                  href={`${base}/proposals/${createdProposalId}`}
+                >
+                  Open proposal →
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={saveProposal} noValidate>
+                {error && (
+                  <div className="error" role="alert">
+                    <p>{error}</p>
+                    <Link href={`${base}/proposals`}>
+                      Check proposal list →
+                    </Link>
                   </div>
-                </section>
+                )}
 
-                <section>
-                  <h2>Proposal items</h2>
+                <fieldset disabled={saving}>
+                  <section>
+                    <h2>Proposal details</h2>
 
-                  {items.map((item, index) => (
-                    <div className="item" key={index}>
-                      <div className="grid">
-                        <div className="field">
-                          <label>
-                            Item {index + 1} type
-                          </label>
-                          <select
-                            value={item.item_type}
+                    <div className="grid">
+                      {DETAIL_FIELDS.map(([field, label, type]) => (
+                        <div className="field" key={field}>
+                          <label htmlFor={field}>{label}</label>
+                          <input
+                            id={field}
+                            type={type}
+                            {...(type === 'number'
+                              ? { min: '0', step: 'any' }
+                              : {})}
+                            value={form[field]}
                             onChange={(event) =>
-                              updateItem(
-                                index,
-                                'item_type',
-                                event.target.value
-                              )
+                              updateForm(field, event.target.value)
                             }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h2>Proposal items</h2>
+
+                    <p className="hint">
+                      Enter each component or service separately.
+                      Blank unit prices are not accepted.
+                    </p>
+
+                    {items.map((item, index) => (
+                      <div className="item" key={item.key}>
+                        <h3>Item {index + 1}</h3>
+
+                        <div className="grid">
+                          <div className="field">
+                            <label htmlFor={`type-${item.key}`}>
+                              Item type
+                            </label>
+                            <select
+                              id={`type-${item.key}`}
+                              value={item.item_type}
+                              onChange={(event) =>
+                                updateItem(
+                                  item.key,
+                                  'item_type',
+                                  event.target.value
+                                )
+                              }
+                            >
+                              {ITEM_TYPES.map(([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="field">
+                            <label htmlFor={`description-${item.key}`}>
+                              Description *
+                            </label>
+                            <input
+                              id={`description-${item.key}`}
+                              value={item.description}
+                              placeholder="Component or service details"
+                              onChange={(event) =>
+                                updateItem(
+                                  item.key,
+                                  'description',
+                                  event.target.value
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="field">
+                            <label htmlFor={`quantity-${item.key}`}>
+                              Quantity *
+                            </label>
+                            <input
+                              id={`quantity-${item.key}`}
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.quantity}
+                              onChange={(event) =>
+                                updateItem(
+                                  item.key,
+                                  'quantity',
+                                  event.target.value
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="field">
+                            <label htmlFor={`unit-${item.key}`}>
+                              Unit
+                            </label>
+                            <input
+                              id={`unit-${item.key}`}
+                              value={item.unit}
+                              placeholder="units, kW, set"
+                              onChange={(event) =>
+                                updateItem(
+                                  item.key,
+                                  'unit',
+                                  event.target.value
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="field">
+                            <label htmlFor={`price-${item.key}`}>
+                              Unit price (₹) *
+                            </label>
+                            <input
+                              id={`price-${item.key}`}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.unit_price_inr}
+                              onChange={(event) =>
+                                updateItem(
+                                  item.key,
+                                  'unit_price_inr',
+                                  event.target.value
+                                )
+                              }
+                            />
+                          </div>
+
+                          <div className="field">
+                            <label htmlFor={`amount-${item.key}`}>
+                              Item amount (₹)
+                            </label>
+                            <input
+                              id={`amount-${item.key}`}
+                              value={formatMoney(itemAmount(item))}
+                              readOnly
+                            />
+                          </div>
+                        </div>
+
+                        {items.length > 1 && (
+                          <button
+                            type="button"
+                            className="remove"
+                            onClick={() => removeItem(item.key)}
                           >
-                            <option value="panel">Panel</option>
-                            <option value="inverter">
-                              Inverter
-                            </option>
-                            <option value="mounting">
-                              Mounting
-                            </option>
-                            <option value="installation">
-                              Installation
-                            </option>
-                            <option value="other">Other</option>
-                          </select>
-                        </div>
+                            Remove item
+                          </button>
+                        )}
+                      </div>
+                    ))}
 
-                        <div className="field">
-                          <label>Description *</label>
-                          <input
-                            value={item.description}
-                            placeholder="e.g. 545W mono PERC panel"
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                'description',
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={items.length >= 100}
+                      onClick={addItem}
+                    >
+                      + Add another item
+                    </button>
 
-                        <div className="field">
-                          <label>Quantity *</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={item.quantity}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                'quantity',
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
+                    <p className="hint">
+                      {items.length} of 100 items
+                    </p>
+                  </section>
 
-                        <div className="field">
-                          <label>Unit</label>
-                          <input
-                            value={item.unit}
-                            placeholder="units, kW, set"
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                'unit',
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
+                  <section>
+                    <h2>Pricing</h2>
 
-                        <div className="field">
-                          <label>Unit price (₹) *</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={item.unit_price_inr}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                'unit_price_inr',
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
+                    <div className="grid">
+                      <div className="field">
+                        <label htmlFor="subtotal">Subtotal</label>
+                        <input
+                          id="subtotal"
+                          value={formatMoney(subtotal)}
+                          readOnly
+                        />
                       </div>
 
-                      {items.length > 1 && (
-                        <button
-                          type="button"
-                          className="remove"
-                          onClick={() => removeItem(index)}
-                        >
-                          Remove item
-                        </button>
-                      )}
+                      <div className="field">
+                        <label htmlFor="discount_inr">
+                          Discount (₹)
+                        </label>
+                        <input
+                          id="discount_inr"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.discount_inr}
+                          onChange={(event) =>
+                            updateForm(
+                              'discount_inr',
+                              event.target.value
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label htmlFor="subsidy_inr">
+                          Subsidy deduction (₹)
+                        </label>
+                        <input
+                          id="subsidy_inr"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.subsidy_inr}
+                          onChange={(event) =>
+                            updateForm(
+                              'subsidy_inr',
+                              event.target.value
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="field">
+                        <label htmlFor="total">
+                          Total after deductions
+                        </label>
+                        <input
+                          id="total"
+                          className={total < 0 ? 'invalid-total' : ''}
+                          value={formatMoney(total)}
+                          readOnly
+                        />
+                      </div>
                     </div>
-                  ))}
 
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={addItem}
-                  >
-                    + Add another item
-                  </button>
-                </section>
+                    {total < 0 && (
+                      <p className="validation-warning" role="alert">
+                        Discount and subsidy exceed the subtotal.
+                        Reduce the deductions before saving.
+                      </p>
+                    )}
 
-                <section>
-                  <h2>Pricing</h2>
+                    <p className="hint">
+                      Current calculation: subtotal − discount − subsidy.
+                      Entering a subsidy does not verify eligibility,
+                      approval or receipt.
+                    </p>
 
-                  <div className="grid">
-                    <div className="field">
-                      <label>Subtotal (₹)</label>
-                      <input
-                        value={calculatedSubtotal.toFixed(2)}
-                        readOnly
-                      />
-                    </div>
+                    <p className="hint">
+                      Amounts shown are a preview. The database
+                      recalculates and saves the final amounts,
+                      rounding unit prices and line amounts to two
+                      decimal places.
+                    </p>
 
-                    <div className="field">
-                      <label htmlFor="discount">
-                        Discount (₹)
-                      </label>
-                      <input
-                        id="discount"
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={discount}
+                    <div className="field notes">
+                      <label htmlFor="notes">Notes</label>
+                      <textarea
+                        id="notes"
+                        rows={4}
+                        maxLength={10000}
+                        value={form.notes}
                         onChange={(event) =>
-                          setDiscount(event.target.value)
+                          updateForm('notes', event.target.value)
                         }
                       />
                     </div>
+                  </section>
 
-                    <div className="field">
-                      <label htmlFor="subsidy">
-                        Subsidy (₹)
-                      </label>
-                      <input
-                        id="subsidy"
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={subsidy}
-                        onChange={(event) =>
-                          setSubsidy(event.target.value)
-                        }
-                      />
-                    </div>
+                  <div className="submit-actions">
+                    <button type="submit">
+                      {saving
+                        ? 'Creating proposal…'
+                        : 'Create draft proposal'}
+                    </button>
 
-                    <div className="field">
-                      <label>Total payable (₹)</label>
-                      <input
-                        value={calculatedTotal.toFixed(2)}
-                        readOnly
-                      />
-                    </div>
+                    {!saving && (
+                      <Link href={`${base}/${leadId}`}>
+                        Cancel
+                      </Link>
+                    )}
                   </div>
 
-                  <div className="field notes">
-                    <label htmlFor="notes">Notes</label>
-                    <textarea
-                      id="notes"
-                      rows={4}
-                      maxLength={10000}
-                      value={notes}
-                      onChange={(event) =>
-                        setNotes(event.target.value)
-                      }
-                    />
-                  </div>
-                </section>
-
-                <button type="submit">
-                  {saving
-                    ? 'Creating proposal…'
-                    : 'Create proposal'}
-                </button>
-              </fieldset>
-            </form>
+                  <p className="hint">
+                    The proposal is saved as a draft. Creating it does
+                    not send it to the customer.
+                  </p>
+                </fieldset>
+              </form>
+            )}
           </>
         )}
       </main>
@@ -715,6 +882,7 @@ export default function CreateProposalPage() {
           color: #f8fafc;
           font-family: Inter, -apple-system, sans-serif;
         }
+
         header {
           display: flex;
           justify-content: space-between;
@@ -724,40 +892,96 @@ export default function CreateProposalPage() {
           padding: 14px 24px;
           border-bottom: 1px solid #334155;
         }
+
+        nav {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+        }
+
         .proposal-page :global(a) {
           color: #facc15;
           text-decoration: none;
         }
+
         main {
           max-width: 920px;
           margin: auto;
           padding: 32px 20px 72px;
         }
-        h1 { margin: 0 0 8px; }
-        h2 { margin: 0 0 18px; font-size: 19px; }
+
+        h1 {
+          margin: 0 0 8px;
+        }
+
+        h2 {
+          margin: 0 0 18px;
+          font-size: 19px;
+        }
+
+        h3 {
+          margin: 0 0 16px;
+          font-size: 16px;
+        }
+
         .eyebrow {
           color: #6ee7b7;
           text-transform: uppercase;
-          letter-spacing: .1em;
+          letter-spacing: 0.1em;
           font-size: 12px;
         }
-        .subtitle { color: #94a3b8; }
-        section, .notice, .error {
+
+        .subtitle,
+        .hint {
+          color: #94a3b8;
+          line-height: 1.6;
+        }
+
+        .hint {
+          font-size: 12px;
+        }
+
+        section,
+        .notice,
+        .error,
+        .success {
           margin: 20px 0;
           padding: 24px;
           border: 1px solid #475569;
           border-radius: 14px;
-          background: rgba(255,255,255,.03);
+          background: rgba(255, 255, 255, 0.03);
+          overflow-wrap: anywhere;
         }
-        .error { color: #fca5a5; }
+
+        .error,
+        .validation-warning {
+          color: #fca5a5;
+        }
+
+        .success {
+          color: #6ee7b7;
+          border-color: #059669;
+        }
+
         .grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px;
         }
-        .field { display: grid; gap: 7px; }
-        label { font-size: 13px; color: #cbd5e1; }
-        input, select, textarea {
+
+        .field {
+          display: grid;
+          gap: 7px;
+        }
+
+        label {
+          font-size: 13px;
+          color: #cbd5e1;
+        }
+
+        input,
+        select,
+        textarea {
           box-sizing: border-box;
           width: 100%;
           min-width: 0;
@@ -768,41 +992,83 @@ export default function CreateProposalPage() {
           color: #fff;
           font: inherit;
         }
-        input[readonly] {
-          color: #94a3b8;
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+          outline: 2px solid #facc15;
+          outline-offset: 2px;
         }
+
+        input[readonly] {
+          color: #cbd5e1;
+        }
+
+        input.invalid-total {
+          color: #fca5a5;
+          border-color: #ef4444;
+        }
+
         .item {
           padding: 18px;
           border: 1px solid #475569;
           border-radius: 12px;
           margin-bottom: 16px;
         }
-        .notes { margin-top: 18px; }
+
+        .notes {
+          margin-top: 18px;
+        }
+
         button {
           border: 0;
           border-radius: 9px;
           padding: 12px 18px;
           background: #facc15;
           color: #1e293b;
+          font: inherit;
           font-weight: 700;
           cursor: pointer;
         }
+
         .secondary {
           background: #334155;
           color: #fff;
         }
+
         .remove {
           margin-top: 12px;
           background: #7f1d1d;
           color: #fff;
         }
+
         button:disabled {
-          opacity: .6;
-          cursor: wait;
+          opacity: 0.6;
+          cursor: not-allowed;
         }
-        fieldset { border: 0; padding: 0; margin: 0; }
+
+        .submit-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 18px;
+        }
+
+        fieldset {
+          border: 0;
+          padding: 0;
+          margin: 0;
+          min-width: 0;
+        }
+
         @media (max-width: 640px) {
-          .grid { grid-template-columns: 1fr; }
+          .grid {
+            grid-template-columns: 1fr;
+          }
+
+          section {
+            padding: 18px;
+          }
         }
       `}</style>
     </div>
