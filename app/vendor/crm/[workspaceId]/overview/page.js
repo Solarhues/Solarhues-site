@@ -1,12 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '../../../../../lib/supabase';
 import { useAuth } from '../../../../providers';
 
 export default function WorkspaceOverviewPage() {
+  const params = useParams();
   const { user, loading } = useAuth();
+
+  const workspaceId = params?.workspaceId;
 
   const [workspace, setWorkspace] = useState(null);
   const [membership, setMembership] = useState(null);
@@ -32,7 +36,7 @@ export default function WorkspaceOverviewPage() {
     setError('');
     setLoadedWorkspaceId(null);
 
-    if (loading || !user?.id) {
+    if (loading || !user?.id || !workspaceId) {
       setFetching(false);
 
       return () => {
@@ -41,7 +45,7 @@ export default function WorkspaceOverviewPage() {
     }
 
     const userId = user.id;
-    const workspaceId = params.workspaceId;
+    const currentWorkspaceId = workspaceId;
 
     async function loadOverview() {
       setFetching(true);
@@ -65,7 +69,7 @@ export default function WorkspaceOverviewPage() {
             `
             )
             .eq('user_id', userId)
-            .eq('workspace_id', workspaceId)
+            .eq('workspace_id', currentWorkspaceId)
             .eq('is_active', true)
             .maybeSingle();
 
@@ -81,8 +85,8 @@ export default function WorkspaceOverviewPage() {
           : null;
 
         const currentWorkspace = record?.workspace;
-
         const now = Date.now();
+
         const accessValid =
           currentWorkspace &&
           currentWorkspace.status === 'active' &&
@@ -102,82 +106,86 @@ export default function WorkspaceOverviewPage() {
           setMembership(record);
         }
 
-        const [leadsResult, proposalsResult, followUpsResult, paymentsResult] =
-          await Promise.all([
-            supabase
-              .from('crm_leads')
-              .select(
-                `
+        const [
+          leadsResult,
+          proposalsResult,
+          followUpsResult,
+          paymentsResult,
+        ] = await Promise.all([
+          supabase
+            .from('crm_leads')
+            .select(
+              `
+              id,
+              created_at,
+              customer_name,
+              customer_phone,
+              site_city,
+              sales_stage,
+              workspace_id
+            `
+            )
+            .eq('workspace_id', currentWorkspaceId)
+            .order('created_at', { ascending: false })
+            .limit(5),
+
+          supabase
+            .from('crm_proposals')
+            .select(
+              `
+              id,
+              created_at,
+              proposal_number,
+              customer_name,
+              status,
+              total_amount,
+              workspace_id
+            `
+            )
+            .eq('workspace_id', currentWorkspaceId)
+            .order('created_at', { ascending: false })
+            .limit(5),
+
+          supabase
+            .from('crm_follow_ups')
+            .select(
+              `
+              id,
+              due_at,
+              status,
+              notes,
+              lead:crm_leads (
                 id,
-                created_at,
                 customer_name,
-                customer_phone,
-                site_city,
-                sales_stage,
                 workspace_id
-              `
               )
-              .eq('workspace_id', workspaceId)
-              .order('created_at', { ascending: false })
-              .limit(5),
+            `
+            )
+            .eq('workspace_id', currentWorkspaceId)
+            .order('due_at', { ascending: true })
+            .limit(5),
 
-            supabase
-              .from('crm_proposals')
-              .select(
-                `
+          supabase
+            .from('crm_payment_requests')
+            .select(
+              `
+              id,
+              created_at,
+              title,
+              amount,
+              due_date,
+              status,
+              lead:crm_leads (
                 id,
-                created_at,
-                proposal_number,
                 customer_name,
-                status,
-                total_amount,
                 workspace_id
-              `
               )
-              .eq('workspace_id', workspaceId)
-              .order('created_at', { ascending: false })
-              .limit(5),
-
-            supabase
-              .from('crm_follow_ups')
-              .select(
-                `
-                id,
-                due_at,
-                status,
-                notes,
-                lead:crm_leads (
-                  id,
-                  customer_name,
-                  workspace_id
-                )
-              `
-              )
-              .eq('workspace_id', workspaceId)
-              .order('due_at', { ascending: true })
-              .limit(5),
-
-            supabase
-              .from('crm_payment_requests')
-              .select(
-                `
-                id,
-                created_at,
-                title,
-                amount,
-                due_date,
-                status,
-                lead:crm_leads (
-                  id,
-                  customer_name,
-                  workspace_id
-                )
-              `
-              )
-              .eq('workspace_id', workspaceId)
-              .order('created_at', { ascending: false })
-              .limit(5),
-          ]);
+            `
+            )
+            .eq('workspace_id', currentWorkspaceId)
+            .order('created_at', { ascending: false })
+            .limit(5),
+        ]);
 
         if (leadsResult.error) throw leadsResult.error;
         if (proposalsResult.error) throw proposalsResult.error;
@@ -192,12 +200,14 @@ export default function WorkspaceOverviewPage() {
         setPayments(paymentsResult.data || []);
       } catch (err) {
         if (active) {
-          setError(err.message || 'Could not load the workspace overview.');
+          setError(
+            err.message || 'Could not load the workspace overview.'
+          );
         }
       } finally {
         if (active) {
           setFetching(false);
-          setLoadedWorkspaceId(workspaceId);
+          setLoadedWorkspaceId(currentWorkspaceId);
         }
       }
     }
@@ -207,16 +217,17 @@ export default function WorkspaceOverviewPage() {
     return () => {
       active = false;
     };
-  }, [user?.id, loading, params.workspaceId, retry]);
+  }, [user?.id, loading, workspaceId, retry]);
 
   const waiting =
     loading ||
     Boolean(
-      user && (fetching || loadedWorkspaceId !== params.workspaceId)
+      user && (fetching || loadedWorkspaceId !== workspaceId)
     );
 
   const leadCount = leads.length;
   const proposalCount = proposals.length;
+
   const pendingFollowUps = followUps.filter(
     (item) => item.status !== 'completed'
   ).length;
@@ -225,7 +236,7 @@ export default function WorkspaceOverviewPage() {
     (item) => item.status !== 'paid' && item.status !== 'cancelled'
   ).length;
 
-  const base = `/vendor/crm/${params.workspaceId}`;
+  const base = `/vendor/crm/${workspaceId}`;
 
   const formatDate = (value) => {
     if (!value) return '—';
@@ -337,7 +348,9 @@ export default function WorkspaceOverviewPage() {
             {leads.length === 0 ? (
               <div className="empty-state">
                 <p>No leads have been added yet.</p>
-                <Link href={`${base}/new`}>Add your first lead →</Link>
+                <Link href={`${base}/new`}>
+                  Add your first lead →
+                </Link>
               </div>
             ) : (
               <div className="record-list">
@@ -348,7 +361,9 @@ export default function WorkspaceOverviewPage() {
                     key={lead.id}
                   >
                     <div>
-                      <strong>{lead.customer_name || 'Unnamed customer'}</strong>
+                      <strong>
+                        {lead.customer_name || 'Unnamed customer'}
+                      </strong>
                       <span>
                         {lead.site_city || 'Location not set'} ·{' '}
                         {lead.sales_stage || 'New'}
@@ -461,7 +476,9 @@ export default function WorkspaceOverviewPage() {
                       key={item.id}
                     >
                       <div>
-                        <strong>{item.title || 'Payment request'}</strong>
+                        <strong>
+                          {item.title || 'Payment request'}
+                        </strong>
                         <span>
                           {item.lead?.customer_name || 'Customer lead'} ·{' '}
                           {item.status || 'Pending'}
@@ -488,8 +505,8 @@ export default function WorkspaceOverviewPage() {
             </div>
 
             <p className="meta-note">
-              Workspace access does not by itself confirm installer approval
-              or payment of a subscription.
+              Workspace access does not by itself confirm installer
+              approval or payment of a subscription.
             </p>
           </section>
         </>
