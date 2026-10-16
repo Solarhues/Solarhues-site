@@ -5,71 +5,23 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '../../../../../../../lib/supabase';
 import { useAuth } from '../../../../../../providers';
+import ProposalOpeningPages from '../../../../../../../components/ProposalOpeningPages';
 
-const CUSTOMER_FIELDS = [
-  ['contact', 'Installer contact details'],
-  ['scope', 'Scope of work'],
-  ['exclusions', 'Exclusions'],
-  ['warranty', 'Warranty terms'],
-  ['payment', 'Payment terms'],
-  ['timeline', 'Estimated delivery / installation timeline'],
-];
-
-const EMPTY_DETAILS = {
-  contact: '',
-  scope: '',
-  exclusions: '',
-  warranty: '',
-  payment: '',
-  timeline: '',
+const EMPTY_PROFILE = {
+  contactName: '',
+  phone: '',
+  email: '',
+  address: '',
+  logoUrl: '',
+  about: '',
 };
 
-function money(value) {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-
-  const amount = Number(value);
-
-  if (!Number.isFinite(amount)) return '—';
-
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
-
-function dateLabel(value, dateOnly = false) {
-  if (!value) return 'Not specified';
-
-  const date = new Date(
-    dateOnly ? `${value}T00:00:00` : value
-  );
-
-  if (Number.isNaN(date.getTime())) return 'Not specified';
-
-  return date.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-function measurement(value, unit) {
-  return value === null || value === undefined
-    ? 'Not specified'
-    : `${value} ${unit}`;
-}
-
-function label(value) {
-  if (!value) return 'Not specified';
-
-  return String(value)
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
+const PROFILE_FIELDS = [
+  ['contactName', 'Partner contact person', 'text'],
+  ['phone', 'Partner phone number', 'tel'],
+  ['email', 'Partner contact email', 'email'],
+  ['logoUrl', 'Partner logo image URL — optional', 'url'],
+];
 
 export default function ProposalPrintPage() {
   const params = useParams();
@@ -80,6 +32,7 @@ export default function ProposalPrintPage() {
   const userId = user?.id;
 
   const base = `/vendor/crm/${workspaceId}`;
+
   const loadKey =
     `${userId || ''}:${workspaceId || ''}:${proposalId || ''}`;
 
@@ -87,8 +40,14 @@ export default function ProposalPrintPage() {
   const [loadedFor, setLoadedFor] = useState('');
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
-  const [details, setDetails] = useState({ ...EMPTY_DETAILS });
+
+  const [partnerProfile, setPartnerProfile] = useState({
+    ...EMPTY_PROFILE,
+  });
+
+  const [solarHuesAbout, setSolarHuesAbout] = useState('');
   const [reviewed, setReviewed] = useState(false);
+  const [printError, setPrintError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -96,8 +55,10 @@ export default function ProposalPrintPage() {
     setRecord(null);
     setLoadedFor('');
     setError('');
-    setDetails({ ...EMPTY_DETAILS });
+    setPartnerProfile({ ...EMPTY_PROFILE });
+    setSolarHuesAbout('');
     setReviewed(false);
+    setPrintError('');
 
     if (loading || !userId || !workspaceId || !proposalId) {
       return () => {
@@ -107,34 +68,42 @@ export default function ProposalPrintPage() {
 
     async function loadDocument() {
       try {
-        const [companyResult, memberResult, profileResult] =
-          await Promise.all([
-            supabase
-              .from('crm_workspaces')
-              .select('id, company_name, status, access_expires_at')
-              .eq('id', workspaceId)
-              .maybeSingle(),
+        const [
+          companyResult,
+          memberResult,
+          profileResult,
+        ] = await Promise.all([
+          supabase
+            .from('crm_workspaces')
+            .select(`
+              id,
+              company_name,
+              status,
+              access_expires_at
+            `)
+            .eq('id', workspaceId)
+            .maybeSingle(),
 
-            supabase
-              .from('crm_workspace_members')
-              .select('member_role, is_active')
-              .eq('workspace_id', workspaceId)
-              .eq('user_id', userId)
-              .maybeSingle(),
+          supabase
+            .from('crm_workspace_members')
+            .select('member_role, is_active')
+            .eq('workspace_id', workspaceId)
+            .eq('user_id', userId)
+            .maybeSingle(),
 
-            supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', userId)
-              .maybeSingle(),
-          ]);
+          supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle(),
+        ]);
 
-        const accessError =
+        const accessQueryError =
           companyResult.error ||
           memberResult.error ||
           profileResult.error;
 
-        if (accessError) throw accessError;
+        if (accessQueryError) throw accessQueryError;
 
         const company = companyResult.data;
         const member = memberResult.data;
@@ -151,7 +120,7 @@ export default function ProposalPrintPage() {
 
         if (!workspaceAvailable) {
           throw new Error(
-            'Workspace is unavailable, expired, or inaccessible.'
+            'Workspace is unavailable, expired, suspended, or inaccessible.'
           );
         }
 
@@ -161,80 +130,70 @@ export default function ProposalPrintPage() {
 
         if (!isAdmin && !memberAllowed) {
           throw new Error(
-            'Your account cannot prepare customer proposals here.'
+            'Only workspace owners, sales staff and SolarHues ' +
+            'admins can prepare customer proposals on this page.'
           );
         }
 
         if (!active) return;
 
-        const { data: proposal, error: proposalError } =
-          await supabase
-            .from('crm_proposals')
-            .select(`
-              id,
-              lead_id,
-              proposal_number,
-              status,
-              system_capacity_kwp,
-              estimated_monthly_generation_kwh,
-              estimated_monthly_savings_inr,
-              subtotal_inr,
-              discount_inr,
-              subsidy_inr,
-              total_inr,
-              valid_until,
-              created_at
-            `)
-            .eq('id', proposalId)
-            .eq('workspace_id', workspaceId)
-            .maybeSingle();
+        const {
+          data: proposal,
+          error: proposalError,
+        } = await supabase
+          .from('crm_proposals')
+          .select(`
+            id,
+            workspace_id,
+            lead_id,
+            proposal_number,
+            status,
+            system_capacity_kwp,
+            valid_until,
+            created_at
+          `)
+          .eq('id', proposalId)
+          .eq('workspace_id', workspaceId)
+          .maybeSingle();
 
-        if (proposalError) throw proposalError;
+        if (proposalError) {
+          throw new Error(`Proposal: ${proposalError.message}`);
+        }
 
         if (!proposal) {
           throw new Error(
-            'Proposal not found in this workspace or inaccessible.'
+            'Proposal not found in this workspace, or your ' +
+            'account does not have permission to read it.'
           );
         }
 
-        const [leadResult, itemsResult] = await Promise.all([
-          supabase
-            .from('crm_leads')
-            .select('id, customer_name, locality, city, state, pincode')
-            .eq('id', proposal.lead_id)
-            .eq('workspace_id', workspaceId)
-            .maybeSingle(),
+        if (!active) return;
 
-          supabase
-            .from('crm_proposal_items')
-            .select(`
-              id,
-              item_type,
-              description,
-              quantity,
-              unit,
-              unit_price_inr,
-              amount_inr,
-              display_order
-            `)
-            .eq('proposal_id', proposal.id)
-            .order('display_order', { ascending: true })
-            .order('id', { ascending: true }),
-        ]);
+        const {
+          data: lead,
+          error: leadError,
+        } = await supabase
+          .from('crm_leads')
+          .select(`
+            id,
+            customer_name,
+            locality,
+            city,
+            state,
+            pincode
+          `)
+          .eq('id', proposal.lead_id)
+          .eq('workspace_id', workspaceId)
+          .maybeSingle();
 
-        if (leadResult.error) throw leadResult.error;
-        if (itemsResult.error) throw itemsResult.error;
-
-        if (!leadResult.data) {
-          throw new Error(
-            'Customer details are unavailable. Check access before printing.'
-          );
+        if (leadError) {
+          throw new Error(`Customer: ${leadError.message}`);
         }
 
-        if (!itemsResult.data?.length) {
+        if (!lead) {
           throw new Error(
-            'No proposal items are available. Review this proposal ' +
-            'before generating a customer document.'
+            'Customer details are unavailable. Review lead ' +
+            'access before preparing this document.'
           );
         }
 
@@ -243,12 +202,13 @@ export default function ProposalPrintPage() {
         setRecord({
           company,
           proposal,
-          lead: leadResult.data,
-          items: itemsResult.data,
+          lead,
         });
       } catch (err) {
         if (active) {
-          setError(err.message || 'Could not prepare this proposal.');
+          setError(
+            err.message || 'Could not prepare this proposal.'
+          );
         }
       } finally {
         if (active) setLoadedFor(loadKey);
@@ -273,27 +233,77 @@ export default function ProposalPrintPage() {
     if (!record || loadedFor !== loadKey) return;
 
     const previousTitle = document.title;
+
     document.title =
-      `${record.proposal.proposal_number} - Solar Proposal`;
+      `${record.proposal.proposal_number || 'Solar Proposal'} ` +
+      '- Cover and About';
 
     return () => {
       document.title = previousTitle;
     };
   }, [record, loadedFor, loadKey]);
 
-  function updateDetail(field, value) {
+  function updateProfile(field, value) {
     setReviewed(false);
-    setDetails((previous) => ({
+    setPrintError('');
+
+    setPartnerProfile((previous) => ({
       ...previous,
       [field]: value,
     }));
+  }
+
+  function updateSolarHuesAbout(value) {
+    setReviewed(false);
+    setPrintError('');
+    setSolarHuesAbout(value);
+  }
+
+  function printDocument() {
+    setPrintError('');
+
+    if (!reviewed) {
+      setPrintError('Review the document before printing.');
+      return;
+    }
+
+    const images = Array.from(
+      document.querySelectorAll(
+        '#customer-proposal-document img'
+      )
+    );
+
+    if (images.some((image) => !image.complete)) {
+      setPrintError(
+        'The partner logo is still loading. Wait and try again.'
+      );
+      return;
+    }
+
+    if (
+      images.some(
+        (image) => image.complete && image.naturalWidth === 0
+      )
+    ) {
+      setPrintError(
+        'The partner logo could not load. Check its image URL ' +
+        'or remove it before printing.'
+      );
+      return;
+    }
+
+    window.print();
   }
 
   const missingRoute = !workspaceId || !proposalId;
 
   const waiting =
     loading ||
-    Boolean(user && !missingRoute && loadedFor !== loadKey);
+    Boolean(
+      user &&
+      !missingRoute &&
+      loadedFor !== loadKey
+    );
 
   const ready =
     !waiting &&
@@ -303,49 +313,75 @@ export default function ProposalPrintPage() {
     !error &&
     record;
 
-  const address = record
-    ? [
-        record.lead.locality,
-        record.lead.city,
-        record.lead.state,
-        record.lead.pincode,
-      ].filter(Boolean).join(', ')
-    : '';
+  const rawLogoUrl = partnerProfile.logoUrl.trim();
+
+  const logoUrlValid =
+    !rawLogoUrl || /^https?:\/\//i.test(rawLogoUrl);
+
+  const documentProfile = {
+    ...partnerProfile,
+    contactName: partnerProfile.contactName.trim(),
+    phone: partnerProfile.phone.trim(),
+    email: partnerProfile.email.trim(),
+    address: partnerProfile.address.trim(),
+    about: partnerProfile.about.trim(),
+    logoUrl: logoUrlValid ? rawLogoUrl : '',
+  };
 
   return (
     <div className="print-page">
       <div className="screen-only">
-        <nav className="navigation" aria-label="Print view navigation">
+        <nav
+          className="navigation"
+          aria-label="Proposal preview navigation"
+        >
           <Link href={`${base}/proposals/${proposalId}`}>
             ← Internal proposal
           </Link>
-          <Link href={`${base}/proposals`}>All proposals</Link>
+
+          <Link href={`${base}/proposals`}>
+            All proposals
+          </Link>
         </nav>
 
-        <h1 className="screen-title">Customer PDF preview</h1>
+        <p className="eyebrow">SolarHues customer document</p>
+
+        <h1>Proposal preview — pages 1 and 2</h1>
+
+        <p className="intro">
+          Cover page and company profiles. The remaining proposal
+          pages will be added in the next steps.
+        </p>
 
         {waiting && (
           <div className="panel" role="status">
-            Preparing proposal…
+            Preparing your proposal…
           </div>
         )}
 
         {!loading && !user && (
           <div className="panel">
-            <p>Sign in to prepare this proposal.</p>
-            <Link href="/vendor-login">Installer login →</Link>
+            <h2>Sign in required</h2>
+            <p>Use your installer account to prepare this document.</p>
+
+            <Link href="/vendor-login">
+              Installer login →
+            </Link>
           </div>
         )}
 
         {!loading && user && missingRoute && (
           <div className="panel error" role="alert">
-            Workspace or proposal ID is missing.
+            Workspace or proposal ID is missing. Open the preview
+            from an existing proposal.
           </div>
         )}
 
         {!waiting && user && error && (
           <div className="panel error" role="alert">
+            <h2>Could not prepare proposal</h2>
             <p>{error}</p>
+
             <button
               type="button"
               onClick={() => setRetry((value) => value + 1)}
@@ -356,284 +392,239 @@ export default function ProposalPrintPage() {
         )}
 
         {ready && (
-          <div className="panel">
-            <h2>Customer-facing information</h2>
+          <>
+            <div className="panel">
+              <h2>Saved CRM information</h2>
 
-            <p className="hint">
-              These entries appear in the PDF only. They are not
-              saved and will be lost when you refresh or leave.
-              Do not paste internal notes or unconfirmed promises.
-            </p>
-
-            <div className="editor-grid">
-              {CUSTOMER_FIELDS.map(([field, title]) => (
-                <div className="field" key={field}>
-                  <label htmlFor={`customer-${field}`}>
-                    {title}
-                  </label>
-                  <textarea
-                    id={`customer-${field}`}
-                    rows={3}
-                    maxLength={5000}
-                    value={details[field]}
-                    placeholder="Leave blank if not yet specified"
-                    onChange={(event) =>
-                      updateDetail(field, event.target.value)
-                    }
-                  />
+              <div className="saved-grid">
+                <div>
+                  <span>Partner / company</span>
+                  <strong>{record.company.company_name}</strong>
                 </div>
-              ))}
+
+                <div>
+                  <span>Customer</span>
+                  <strong>
+                    {record.lead.customer_name || 'Not specified'}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Proposal number</span>
+                  <strong>
+                    {record.proposal.proposal_number ||
+                      'Not specified'}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>System capacity</span>
+                  <strong>
+                    {record.proposal.system_capacity_kwp == null
+                      ? 'Not specified'
+                      : `${record.proposal.system_capacity_kwp} kWp`}
+                  </strong>
+                </div>
+              </div>
+
+              <p className="hint">
+                These values come from your saved CRM records.
+                This screen does not edit them.
+              </p>
             </div>
 
-            <p className="hint">
-              Blank terms appear as “Not specified in this proposal.”
-              Taxes are not separately broken out in the saved
-              pricing. Review the commercial meaning before sending.
-            </p>
+            <div className="panel">
+              <h2>Page 2 — About SolarHues</h2>
 
-            {record.proposal.status === 'draft' && (
-              <p className="warning">
-                This proposal is still a draft. The customer PDF
-                will retain its Draft status.
+              <p className="hint">
+                Enter approved company wording. Do not add
+                unverified installer, financing, insurance or
+                performance claims.
               </p>
-            )}
 
-            <label className="review-check">
-              <input
-                type="checkbox"
-                checked={reviewed}
-                onChange={(event) =>
-                  setReviewed(event.target.checked)
-                }
-              />
-              I have reviewed the customer, items, pricing and terms.
-            </label>
+              <div className="field">
+                <label htmlFor="solarhues-about">
+                  SolarHues description
+                </label>
 
-            <button
-              type="button"
-              disabled={!reviewed}
-              onClick={() => window.print()}
-            >
-              Print / Save as PDF
-            </button>
+                <textarea
+                  id="solarhues-about"
+                  rows={5}
+                  maxLength={1000}
+                  value={solarHuesAbout}
+                  placeholder="Approved description of SolarHues"
+                  onChange={(event) =>
+                    updateSolarHuesAbout(event.target.value)
+                  }
+                />
 
-            <p className="hint">
-              In the print dialog, choose A4 and Save as PDF.
-              Turn off browser headers and footers to avoid printing
-              the CRM URL. Check every page before sharing.
-            </p>
-          </div>
+                <span className="character-count">
+                  {solarHuesAbout.length}/1000 characters
+                </span>
+              </div>
+            </div>
+
+            <div className="panel">
+              <h2>Partner profile and branding</h2>
+
+              <p className="hint">
+                The partner name comes from the workspace.
+                Add its description, optional logo, and contact
+                details below.
+              </p>
+
+              <div className="editor-grid">
+                {PROFILE_FIELDS.map(([field, title, type]) => (
+                  <div className="field" key={field}>
+                    <label htmlFor={`partner-${field}`}>
+                      {title}
+                    </label>
+
+                    <input
+                      id={`partner-${field}`}
+                      type={type}
+                      value={partnerProfile[field]}
+                      maxLength={field === 'logoUrl' ? 2000 : 254}
+                      placeholder={
+                        field === 'logoUrl'
+                          ? 'https://.../partner-logo.png'
+                          : ''
+                      }
+                      onChange={(event) =>
+                        updateProfile(field, event.target.value)
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {!logoUrlValid && (
+                <p className="warning" role="alert">
+                  Use a complete logo URL beginning with https://
+                  or http://.
+                </p>
+              )}
+
+              <p className="hint">
+                Use a stable image URL for the logo. If no logo
+                is supplied, the document shows the partner name
+                without an empty logo box.
+              </p>
+
+              <div className="field spaced">
+                <label htmlFor="partner-address">
+                  Partner address
+                </label>
+
+                <textarea
+                  id="partner-address"
+                  rows={2}
+                  maxLength={300}
+                  value={partnerProfile.address}
+                  onChange={(event) =>
+                    updateProfile('address', event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="field spaced">
+                <label htmlFor="partner-about">
+                  About {record.company.company_name}
+                </label>
+
+                <textarea
+                  id="partner-about"
+                  rows={5}
+                  maxLength={1000}
+                  value={partnerProfile.about}
+                  placeholder="Partner background and services offered"
+                  onChange={(event) =>
+                    updateProfile('about', event.target.value)
+                  }
+                />
+
+                <span className="character-count">
+                  {partnerProfile.about.length}/1000 characters
+                </span>
+              </div>
+            </div>
+
+            <div className="panel">
+              <h2>Review and print</h2>
+
+              <p className="warning">
+                The About text, logo URL and contact details entered
+                here are temporary. They are not saved and will be
+                lost when you refresh or leave this page.
+              </p>
+
+              <p className="hint">
+                This preview contains only two opening pages, not
+                the complete technical or commercial proposal.
+                Do not send it as the full offer.
+              </p>
+
+              {record.proposal.status === 'draft' && (
+                <p className="hint">
+                  The proposal is a draft. Its Draft label remains
+                  visible on the cover.
+                </p>
+              )}
+
+              <label className="review-check">
+                <input
+                  type="checkbox"
+                  checked={reviewed}
+                  onChange={(event) =>
+                    setReviewed(event.target.checked)
+                  }
+                />
+
+                <span>
+                  I have reviewed the company descriptions,
+                  branding and customer details.
+                </span>
+              </label>
+
+              {printError && (
+                <p className="warning" role="alert">
+                  {printError}
+                </p>
+              )}
+
+              <button
+                type="button"
+                disabled={!reviewed || !logoUrlValid}
+                onClick={printDocument}
+              >
+                Print / Save pages 1 and 2 as PDF
+              </button>
+
+              <p className="hint">
+                Choose A4 and Save as PDF. Set margins to None
+                if your browser overrides the page settings.
+                Disable browser headers and footers. Check that
+                the preview contains two pages with no CRM controls.
+              </p>
+            </div>
+          </>
         )}
       </div>
 
       {ready && (
-        <article
+        <div
           id="customer-proposal-document"
-          className="document"
-          aria-label="Customer solar proposal"
+          className="document-wrapper"
         >
-          <header className="document-header">
-            <div>
-              <p className="brand">SolarHues</p>
-              <p className="brand-caption">
-                Solar proposal prepared by
-              </p>
-              <h2 className="company-name">
-                {record.company.company_name}
-              </h2>
-              {details.contact.trim() && (
-                <p className="multiline contact">
-                  {details.contact.trim()}
-                </p>
-              )}
-            </div>
-
-            <div className="proposal-reference">
-              <h2>SOLAR PROPOSAL</h2>
-              <p>{record.proposal.proposal_number}</p>
-              <span className="status">
-                {label(record.proposal.status)}
-              </span>
-            </div>
-          </header>
-
-          <section className="customer-grid">
-            <div>
-              <h3>Prepared for</h3>
-              <p className="customer-name">
-                {record.lead.customer_name || 'Customer'}
-              </p>
-              <p>{address || 'Site location not specified'}</p>
-            </div>
-
-            <dl className="reference-details">
-              <div>
-                <dt>Proposal date</dt>
-                <dd>{dateLabel(record.proposal.created_at)}</dd>
-              </div>
-              <div>
-                <dt>Valid until</dt>
-                <dd>
-                  {dateLabel(record.proposal.valid_until, true)}
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <section>
-            <h3>Proposed solar system</h3>
-
-            <div className="system-grid">
-              <div className="metric">
-                <span>System capacity</span>
-                <strong>
-                  {measurement(
-                    record.proposal.system_capacity_kwp,
-                    'kWp'
-                  )}
-                </strong>
-              </div>
-
-              <div className="metric">
-                <span>Estimated monthly generation</span>
-                <strong>
-                  {measurement(
-                    record.proposal.estimated_monthly_generation_kwh,
-                    'kWh'
-                  )}
-                </strong>
-              </div>
-
-              <div className="metric">
-                <span>Estimated monthly savings</span>
-                <strong>
-                  {money(
-                    record.proposal.estimated_monthly_savings_inr
-                  )}
-                </strong>
-              </div>
-            </div>
-
-            <p className="document-note">
-              Generation and savings figures are estimates, not
-              guarantees of performance or financial return.
-            </p>
-          </section>
-
-          <section>
-            <h3>Components and services</h3>
-
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Description</th>
-                    <th scope="col" className="number">Qty</th>
-                    <th scope="col">Unit</th>
-                    <th scope="col" className="number">
-                      Unit price
-                    </th>
-                    <th scope="col" className="number">Amount</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {record.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="item-description">
-                        <span className="item-type">
-                          {label(item.item_type)}
-                        </span>
-                        <div className="multiline">
-                          {item.description}
-                        </div>
-                      </td>
-                      <td className="number">{item.quantity}</td>
-                      <td>{item.unit}</td>
-                      <td className="number">
-                        {money(item.unit_price_inr)}
-                      </td>
-                      <td className="number">
-                        {money(item.amount_inr)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section className="pricing-section">
-            <div className="price-summary">
-              <div>
-                <span>Subtotal</span>
-                <strong>
-                  {money(record.proposal.subtotal_inr)}
-                </strong>
-              </div>
-              <div>
-                <span>Discount deduction</span>
-                <strong>
-                  {money(record.proposal.discount_inr)}
-                </strong>
-              </div>
-              <div>
-                <span>Subsidy deduction entered</span>
-                <strong>
-                  {money(record.proposal.subsidy_inr)}
-                </strong>
-              </div>
-              <div className="grand-total">
-                <span>Total after deductions</span>
-                <strong>{money(record.proposal.total_inr)}</strong>
-              </div>
-            </div>
-
-            <p className="document-note">
-              Amounts are in Indian rupees (INR). The total shown
-              follows the saved calculation: subtotal minus discount
-              minus subsidy deduction. Tax treatment is not separately
-              specified here.
-            </p>
-
-            {Number(record.proposal.subsidy_inr) > 0 && (
-              <p className="subsidy-notice">
-                The entered subsidy deduction does not confirm
-                eligibility, approval, disbursement or upfront
-                availability. The installer and customer must
-                confirm who pays this amount and when.
-              </p>
-            )}
-          </section>
-
-          <section className="terms-section">
-            <h3>Scope and commercial terms</h3>
-
-            {CUSTOMER_FIELDS
-              .filter(([field]) => field !== 'contact')
-              .map(([field, title]) => (
-                <div className="term" key={field}>
-                  <h4>{title}</h4>
-                  <p className="multiline">
-                    {details[field].trim() ||
-                      'Not specified in this proposal.'}
-                  </p>
-                </div>
-              ))}
-          </section>
-
-          <footer className="document-footer">
-            <p>
-              Prepared by {record.company.company_name} using
-              SolarHues.
-            </p>
-            <p>
-              This document is a proposal, not a payment receipt.
-              SolarHues branding does not certify installer approval,
-              subsidy eligibility or workmanship.
-            </p>
-          </footer>
-        </article>
+          <ProposalOpeningPages
+            company={record.company}
+            proposal={record.proposal}
+            lead={record.lead}
+            partnerProfile={documentProfile}
+            solarHuesAbout={solarHuesAbout}
+            totalPages={2}
+          />
+        </div>
       )}
 
       <style jsx>{`
@@ -648,7 +639,9 @@ export default function ProposalPrintPage() {
           padding: 28px 20px 64px;
           background: #1e293b;
           color: #f8fafc;
-          font-family: Arial, sans-serif;
+          font-family: Inter, -apple-system, BlinkMacSystemFont,
+            'Segoe UI', Arial, sans-serif;
+          line-height: 1.6;
         }
 
         .screen-only {
@@ -658,9 +651,10 @@ export default function ProposalPrintPage() {
 
         .navigation {
           display: flex;
+          align-items: center;
           flex-wrap: wrap;
           gap: 20px;
-          margin-bottom: 24px;
+          margin-bottom: 26px;
         }
 
         .print-page :global(a) {
@@ -668,22 +662,51 @@ export default function ProposalPrintPage() {
           text-decoration: none;
         }
 
-        .screen-title {
+        .eyebrow {
+          margin: 0 0 10px;
+          color: #6ee7b7;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        h1 {
+          margin: 0 0 10px;
+          color: #f8fafc;
           font-size: 28px;
-          margin: 0 0 20px;
+          line-height: 1.3;
+        }
+
+        h2 {
+          margin: 0 0 14px;
+          color: #f8fafc;
+          font-size: 20px;
+          line-height: 1.4;
+        }
+
+        .intro {
+          margin: 0 0 24px;
+          color: #cbd5e1;
+          font-size: 14px;
         }
 
         .panel {
+          margin: 20px 0;
           padding: 24px;
           border: 1px solid #475569;
           border-radius: 14px;
           background: #0f172a;
-          margin-bottom: 28px;
         }
 
-        .panel h2 {
-          margin: 0 0 12px;
-          font-size: 20px;
+        .error {
+          color: #fecaca;
+          border-color: #b91c1c;
+          overflow-wrap: anywhere;
+        }
+
+        .error h2 {
+          color: #fecaca;
         }
 
         .hint {
@@ -695,36 +718,55 @@ export default function ProposalPrintPage() {
         .warning {
           color: #fde68a;
           font-size: 13px;
-          line-height: 1.6;
-        }
-
-        .error {
-          color: #fecaca;
+          line-height: 1.7;
           overflow-wrap: anywhere;
         }
 
+        .saved-grid,
         .editor-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
-          margin-top: 20px;
+          gap: 18px;
+        }
+
+        .saved-grid > div {
+          min-width: 0;
+        }
+
+        .saved-grid span {
+          display: block;
+          margin-bottom: 5px;
+          color: #94a3b8;
+          font-size: 12px;
+        }
+
+        .saved-grid strong {
+          color: #f8fafc;
+          font-size: 14px;
+          overflow-wrap: anywhere;
         }
 
         .field {
           display: grid;
           gap: 8px;
+          min-width: 0;
         }
 
-        .field label {
+        .spaced {
+          margin-top: 20px;
+        }
+
+        label {
           color: #cbd5e1;
           font-size: 13px;
+          font-weight: 600;
         }
 
+        input,
         textarea {
           box-sizing: border-box;
           width: 100%;
           min-width: 0;
-          resize: vertical;
           padding: 12px;
           border: 1px solid #64748b;
           border-radius: 9px;
@@ -734,27 +776,50 @@ export default function ProposalPrintPage() {
           font-size: 14px;
         }
 
+        textarea {
+          resize: vertical;
+          line-height: 1.6;
+        }
+
+        input:focus,
+        textarea:focus {
+          outline: 2px solid #facc15;
+          outline-offset: 2px;
+        }
+
+        .character-count {
+          color: #94a3b8;
+          font-size: 11px;
+          text-align: right;
+        }
+
         .review-check {
           display: flex;
           align-items: flex-start;
           gap: 10px;
           margin: 22px 0;
-          font-size: 14px;
           line-height: 1.6;
         }
 
         .review-check input {
-          margin-top: 4px;
+          flex: 0 0 auto;
+          width: 16px;
+          height: 16px;
+          margin-top: 3px;
           accent-color: #facc15;
         }
 
         button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
           padding: 13px 18px;
           border: 0;
           border-radius: 9px;
           background: #facc15;
           color: #1e293b;
           font: inherit;
+          font-size: 14px;
           font-weight: 700;
           cursor: pointer;
         }
@@ -764,288 +829,43 @@ export default function ProposalPrintPage() {
           cursor: not-allowed;
         }
 
-        .document {
-          box-sizing: border-box;
+        .document-wrapper {
+          width: 100%;
           max-width: 210mm;
           margin: 32px auto 0;
-          padding: 16mm;
-          background: #fff;
-          color: #172033;
-          font-family: Arial, sans-serif;
-          font-size: 12px;
-          line-height: 1.6;
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+          padding: 0;
+          background: transparent;
         }
 
-        .document-header {
-          display: flex;
-          justify-content: space-between;
-          gap: 24px;
-          padding-bottom: 22px;
-          border-bottom: 3px solid #eab308;
-        }
+        @media screen and (max-width: 700px) {
+          .print-page {
+            padding: 24px 12px 48px;
+          }
 
-        .brand {
-          margin: 0;
-          color: #065f46;
-          font-size: 25px;
-          font-weight: 800;
-        }
-
-        .brand-caption {
-          margin: 6px 0 2px;
-          color: #64748b;
-          font-size: 10px;
-        }
-
-        .company-name {
-          margin: 0;
-          color: #172033;
-          font-size: 18px;
-          overflow-wrap: anywhere;
-        }
-
-        .contact {
-          margin: 8px 0 0;
-          font-size: 11px;
-        }
-
-        .proposal-reference {
-          flex-shrink: 0;
-          max-width: 45%;
-          text-align: right;
-          overflow-wrap: anywhere;
-        }
-
-        .proposal-reference h2 {
-          margin: 0;
-          color: #172033;
-          font-size: 17px;
-          letter-spacing: 0.04em;
-        }
-
-        .proposal-reference p {
-          margin: 7px 0;
-          font-weight: 700;
-        }
-
-        .status {
-          display: inline-block;
-          padding: 3px 9px;
-          border: 1px solid #94a3b8;
-          border-radius: 4px;
-          font-size: 10px;
-        }
-
-        .document section {
-          margin-top: 24px;
-        }
-
-        .document h3 {
-          margin: 0 0 12px;
-          color: #172033;
-          font-size: 14px;
-        }
-
-        .customer-grid {
-          display: grid;
-          grid-template-columns: 1.2fr 1fr;
-          gap: 28px;
-        }
-
-        .customer-grid p {
-          margin: 4px 0;
-        }
-
-        .customer-name {
-          font-size: 15px;
-          font-weight: 700;
-        }
-
-        .reference-details {
-          margin: 0;
-        }
-
-        .reference-details > div {
-          display: flex;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 8px;
-        }
-
-        .reference-details dt {
-          color: #475569;
-        }
-
-        .reference-details dd {
-          margin: 0;
-          text-align: right;
-        }
-
-        .system-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-        }
-
-        .metric {
-          padding: 12px;
-          border: 1px solid #cbd5e1;
-          border-radius: 5px;
-        }
-
-        .metric span {
-          display: block;
-          color: #475569;
-          font-size: 10px;
-        }
-
-        .metric strong {
-          display: block;
-          margin-top: 6px;
-          font-size: 14px;
-        }
-
-        .document-note {
-          color: #475569;
-          font-size: 10px;
-          line-height: 1.6;
-        }
-
-        .table-wrap {
-          overflow-x: auto;
-        }
-
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-        }
-
-        th,
-        td {
-          padding: 10px 7px;
-          border-bottom: 1px solid #cbd5e1;
-          text-align: left;
-          vertical-align: top;
-        }
-
-        th {
-          color: #172033;
-          background: #f1f5f9;
-          border-top: 1px solid #cbd5e1;
-          font-size: 10px;
-        }
-
-        .number {
-          text-align: right;
-          white-space: nowrap;
-        }
-
-        .item-description {
-          width: 42%;
-          overflow-wrap: anywhere;
-        }
-
-        .item-type {
-          display: block;
-          margin-bottom: 3px;
-          color: #475569;
-          font-size: 9px;
-          text-transform: uppercase;
-        }
-
-        .multiline {
-          white-space: pre-wrap;
-          overflow-wrap: anywhere;
-        }
-
-        .price-summary {
-          width: min(100%, 350px);
-          margin-left: auto;
-        }
-
-        .price-summary > div {
-          display: flex;
-          justify-content: space-between;
-          gap: 16px;
-          padding: 7px 0;
-        }
-
-        .price-summary strong {
-          white-space: nowrap;
-        }
-
-        .grand-total {
-          margin-top: 7px;
-          padding-top: 12px !important;
-          border-top: 2px solid #172033;
-          font-size: 14px;
-        }
-
-        .subsidy-notice {
-          padding: 10px;
-          border: 1px solid #d97706;
-          color: #78350f;
-          font-size: 10px;
-        }
-
-        .term {
-          margin-bottom: 14px;
-        }
-
-        .term h4 {
-          margin: 0 0 4px;
-          font-size: 11px;
-        }
-
-        .term p {
-          margin: 0;
-          color: #334155;
-          font-size: 11px;
-        }
-
-        .document-footer {
-          margin-top: 30px;
-          padding-top: 14px;
-          border-top: 1px solid #cbd5e1;
-          color: #64748b;
-          font-size: 9px;
-        }
-
-        .document-footer p {
-          margin: 4px 0;
-        }
-
-        @media (max-width: 700px) {
-          .editor-grid,
-          .customer-grid,
-          .system-grid {
+          .saved-grid,
+          .editor-grid {
             grid-template-columns: 1fr;
           }
 
-          .document {
-            padding: 24px;
+          .panel {
+            padding: 18px;
           }
 
-          .document-header {
-            flex-direction: column;
-          }
-
-          .proposal-reference {
-            max-width: 100%;
-            text-align: left;
+          h1 {
+            font-size: 24px;
           }
         }
 
         @media print {
           @page {
             size: A4;
-            margin: 14mm;
+            margin: 0;
           }
 
           :global(html),
           :global(body) {
+            margin: 0 !important;
+            padding: 0 !important;
             background: #fff !important;
           }
 
@@ -1053,8 +873,8 @@ export default function ProposalPrintPage() {
             visibility: hidden !important;
           }
 
-          .document,
-          .document * {
+          :global(#customer-proposal-document),
+          :global(#customer-proposal-document *) {
             visibility: visible !important;
           }
 
@@ -1063,68 +883,23 @@ export default function ProposalPrintPage() {
           }
 
           .print-page {
-            padding: 0;
             min-height: 0;
+            margin: 0;
+            padding: 0;
             background: #fff;
           }
 
-          .document {
+          .document-wrapper {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
+            width: 210mm;
             max-width: none;
             margin: 0;
             padding: 0;
-            box-shadow: none;
-            color: #000;
-          }
-
-          .document-header {
-            flex-direction: row;
-            break-inside: avoid;
-          }
-
-          .proposal-reference {
-            max-width: 45%;
-            text-align: right;
-          }
-
-          .customer-grid {
-            grid-template-columns: 1.2fr 1fr;
-          }
-
-          .system-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-
-          .table-wrap {
-            overflow: visible;
-          }
-
-          thead {
-            display: table-header-group;
-          }
-
-          tr {
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-
-          h3,
-          h4 {
-            break-after: avoid;
-          }
-
-          .metric,
-          .price-summary,
-          .document-footer {
-            break-inside: avoid;
-          }
-
-          p {
-            orphans: 3;
-            widows: 3;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
         }
       `}</style>
