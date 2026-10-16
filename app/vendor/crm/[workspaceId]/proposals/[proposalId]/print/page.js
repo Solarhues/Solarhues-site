@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '../../../../../../../lib/supabase';
 import { useAuth } from '../../../../../../providers';
 import ProposalOpeningPages from '../../../../../../../components/ProposalOpeningPages';
+import ProposalCapabilitiesPages from '../../../../../../../components/ProposalCapabilitiesPages';
 
 const EMPTY_PROFILE = {
   contactName: '',
@@ -616,16 +617,53 @@ export default function ProposalPrintPage() {
           id="customer-proposal-document"
           className="document-wrapper"
         >
-          <ProposalOpeningPages
-            company={record.company}
-            proposal={record.proposal}
-            lead={record.lead}
-            partnerProfile={documentProfile}
-            solarHuesAbout={solarHuesAbout}
-            totalPages={2}
-          />
-        </div>
-      )}
+          {ready && (
+  <div
+    id="customer-proposal-document"
+    className="document-wrapper"
+  >
+    <ProposalOpeningPages
+      company={record.company}
+      proposal={record.proposal}
+      lead={record.lead}
+      partnerProfile={documentProfile}
+      solarHuesAbout={solarHuesAbout}
+      totalPages={4}
+    />
+
+    <ProposalCapabilitiesPages
+      company={record.company}
+      proposal={record.proposal}
+      serviceCoverage={{
+        approvals: 'Not specified',
+        siteAudit: 'Not specified',
+        design: 'Not specified',
+        agreement: 'Not specified',
+        finance: 'Not specified',
+        quality: 'Not specified',
+        safety: 'Not specified',
+        maintenance: 'Not specified',
+        commissioning: 'Not specified',
+      }}
+      productRange={{
+  modules: [
+    'Confirmed module technology or product family',
+    'Another confirmed module option',
+  ],
+  inverters: [
+    'Confirmed inverter type or product family',
+  ],
+  structures: [
+    'Flush mount',
+    'Roof rail',
+    'Short rail',
+    'Elevated',
+  ],
+}}
+      totalPages={4}
+    />
+  </div>
+)}
 
       <style jsx>{`
         :global(body) {
