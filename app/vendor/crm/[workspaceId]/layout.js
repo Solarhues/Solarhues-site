@@ -41,9 +41,9 @@ export default function WorkspaceLayout({ children }) {
             </Link>
           ))}
 
-          <Link href="/vendor/crm" className="switch">
-            Switch workspace
-          </Link>
+          <Link href="/vendor/crm?select=1" className="switch">
+  Switch workspace
+</Link>
         </div>
       </nav>
 
